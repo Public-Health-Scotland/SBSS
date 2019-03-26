@@ -30,7 +30,24 @@ analysis_db <- filter(analysis_db, between(invdate,
                                            as.Date(date_last)) &
                         optin == 0 &
                         hbr14 %in% 1:14
-                      )
+)
 # 1,844,815 - same as SPSS
+# Next step in SPSS is flexi-sig removal, this has been done in R script 1
 
+# Calculate uptake
 
+# By sex
+KPI_1_sex <- analysis_db %>%
+  group_by(sex, hbr14) %>%
+  summarise(uptake_p = sum(uptake_n)/sum(invite_n))
+
+# For all sexes
+KPI_1_all <- analysis_db %>%
+  group_by(hbr14) %>%
+  summarise(uptake_p = sum(uptake_n)/sum(invite_n)) %>%
+  mutate(sex = 3)
+
+# Combine the two
+KPI_1 <- bind_rows(KPI_1_sex, KPI_1_all)
+
+# Include HB for all Scotland
