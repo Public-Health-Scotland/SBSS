@@ -1,3 +1,4 @@
+
 ##########################################################
 # Analysis_dataset_.R
 # Gavin Clark
@@ -294,3 +295,8 @@ slim_db %>%
   group_by(test, uptake_history) %>%
   summarize(invite_n = sum(invite_n),
             uptake_p = sum(uptake_n)/sum(invite_n))
+
+saveRDS(slim_db, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+                               "TPP/KPIs/Code + DB/analysis_dataset.rds"))
+
+# Need to pick up those with blank date round 1 with IT, flag for now
