@@ -40,7 +40,7 @@ slim_db <- raw_db %>% select(
   -ERR,
   -(final_date_round:transf06),
   -transf14,
-  -(optin:HBIDENT),
+  -(workaround:HBIDENT),
   -PRECOLAS,
   -FURTHASS,
   -(BARENCTC:BARCTDAT),
