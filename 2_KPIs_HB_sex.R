@@ -158,3 +158,96 @@ KPI_2 <- bind_rows(KPI_sex, KPI_all, KPI_Scot_sex, KPI_Scot_all) %>%
   arrange(hbr14, sex) %>%
   spread(hbr14, uptake_p) %>%
   filter(!is.na(simd2016))
+
+## KPI 4 - waiting time proportions
+## Fix levels
+# By sex
+KPI_sex <- analysis_db %>%
+  filter(waiting_time != "No colonoscopy") %>%
+  group_by(sex, hbr14, waiting_time) %>%
+  summarise(col_perf_n = sum(col_perf_n)) %>%
+  mutate(
+    p = col_perf_n /sum(col_perf_n)
+  )
+
+# For all sexes
+KPI_all <- analysis_db %>%
+  filter(waiting_time != "No colonoscopy") %>%
+  group_by(hbr14, waiting_time) %>%
+  summarise(col_perf_n = sum(col_perf_n)) %>%
+  mutate(sex = 3)
+
+
+# Scotland sexes
+KPI_Scot_sex <- analysis_db %>%
+  filter(waiting_time != "No colonoscopy") %>%
+  group_by(sex, waiting_time) %>%
+  summarise(col_perf_n = sum(col_perf_n)) %>%
+  mutate(hbr14 = 15)
+
+# Scotland total
+KPI_Scot_all <- analysis_db %>%
+  filter(waiting_time != "No colonoscopy") %>%
+  group_by(waiting_time) %>%
+  summarise(col_perf_n = sum(col_perf_n)) %>%
+  mutate(hbr14 = 15, sex = 3)
+
+# Combine all of the above
+KPI_4 <- bind_rows(KPI_sex, KPI_all, KPI_Scot_sex, KPI_Scot_all) %>%
+  group_by(sex, hbr14) %>%
+  mutate(KPI = 4,
+         p = col_perf_n/sum(col_perf_n)) %>%
+  select(-col_perf_n) %>%
+  spread(hbr14, p)
+
+# Proportion function
+
+KPI_by <- function(filter, )
+  # By sex
+  KPI_sex <- analysis_db %>%
+  filter(waiting_time != "No colonoscopy") %>%
+  group_by(sex, hbr14, waiting_time) %>%
+  summarise(col_perf_n = sum(col_perf_n)) %>%
+  mutate(
+    p = col_perf_n /sum(col_perf_n)
+  )
+
+# For all sexes
+KPI_all <- analysis_db %>%
+  filter(waiting_time != "No colonoscopy") %>%
+  group_by(hbr14, waiting_time) %>%
+  summarise(col_perf_n = sum(col_perf_n)) %>%
+  mutate(sex = 3)
+
+
+# Scotland sexes
+KPI_Scot_sex <- analysis_db %>%
+  filter(waiting_time != "No colonoscopy") %>%
+  group_by(sex, waiting_time) %>%
+  summarise(col_perf_n = sum(col_perf_n)) %>%
+  mutate(hbr14 = 15)
+
+# Scotland total
+KPI_Scot_all <- analysis_db %>%
+  filter(waiting_time != "No colonoscopy") %>%
+  group_by(waiting_time) %>%
+  summarise(col_perf_n = sum(col_perf_n)) %>%
+  mutate(hbr14 = 15, sex = 3)
+
+# Combine all of the above
+KPI_4 <- bind_rows(KPI_sex, KPI_all, KPI_Scot_sex, KPI_Scot_all) %>%
+  group_by(sex, hbr14) %>%
+  mutate(KPI = 4,
+         p = col_perf_n/sum(col_perf_n)) %>%
+  select(-col_perf_n) %>%
+  spread(hbr14, p)
+
+
+
+
+
+
+
+
+
+
