@@ -26,6 +26,7 @@ library(reshape2)
 #   setting filepaths and extract dates
 
 ### Step 1 - Extract database, drop unnecessary columns and save as R file
+
 ## Bringing in optins version, as could produce opt-in report from same file
 
 raw_db <- read_sav(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Data/",
@@ -290,5 +291,3 @@ slim_db <- mutate(slim_db,
 
 saveRDS(slim_db, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
                                "TPP/KPIs/Code + DB/analysis_dataset.rds"))
-
-
