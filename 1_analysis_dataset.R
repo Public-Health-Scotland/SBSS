@@ -1,18 +1,18 @@
 
 ##########################################################
-# Analysis_dataset_.R
+# 1_analysis_dataset.R
 # Gavin Clark
 # 11/03/2019
 # Data extraction/preparation
 # Written/run on R Studio Server
 # R version 3.2.3
-# This script creates a dataset for summary
+# This script creates a dataset for summary in later scripts
+# This is not a step carried out in the SPSS flow, but should save time 
+# over the course of KPI production
 # Approximate run time
 ##########################################################
 
 ### 1 - Housekeeping ----
-# clear workspace if not already clear
-rm(list = ls())
 
 #   loading packages
 library(dplyr)
@@ -26,9 +26,7 @@ library(reshape2)
 #   setting filepaths and extract dates
 
 ### Step 1 - Extract database, drop unnecessary columns and save as R file
-## Note - may make sense to do this as separate script/create the count 
-## variables before using further scripts for different sections KPIs, 
-## time-series, funnel, demography, comparison, etc.
+
 ## Bringing in optins version, as could produce opt-in report from same file
 
 raw_db <- read_sav(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Data/",
@@ -40,7 +38,7 @@ slim_db <- raw_db %>% select(
   -ERR,
   -(final_date_round:transf06),
   -transf14,
-  -(optin:HBIDENT),
+  -(workaround:HBIDENT),
   -PRECOLAS,
   -FURTHASS,
   -(BARENCTC:BARCTDAT),
@@ -52,7 +50,6 @@ slim_db <- raw_db %>% select(
 
 ## glimpse() shows that date fields are being correctly read in
 ## Test?
-## Tests also for screres, simd etc?
 
 ### Remove flexi. sig. study participants
 flexi_sig <- read_sav(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
@@ -69,15 +66,7 @@ slim_db <- left_join(slim_db, flexi_sig, by = "chinum") %>%
                            screres %in% c(1,3,4,5,6,7,8), 1, 0)) %>%
   filter(remove == 0|is.na(remove)) %>%
   select(-(FSPERF:remove))
-
-# how many matched? Create test to check this
-# table(slim_db$remove)
-
-saveRDS(slim_db, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                               "TPP/KPIs/Code + DB/SBSD_slim_nov18.rds"))
-
-#slim_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-#                          "TPP/KPIs/Code + DB/SBSD_slim_nov18.rds"))
+# 43 removed
 
 # Remove tables that are no longer needed
 rm(list = c("flexi_sig", "raw_db"))
@@ -134,7 +123,7 @@ slim_db <- slim_db %>%
       0)
   )
 
-# Test - are percentages in line with expectation?
+# Sense-check - are percentages in line with expectation?
 check <- slim_db %>%
   summarise(
     uptake_p = sum(uptake_n)/sum(invite_n),
@@ -193,105 +182,112 @@ slim_db <- slim_db %>%
            )
   )
 
-# check what is causing NAs
-# table(slim_db$dukes, slim_db$dukes_der, useNA = "always")
-# visualise staging over time
-
+# Test - monitor % of each dukes stage/numbers over time
 # stage_chart <- slim_db %>%
 #   filter(cancer_n == 1) %>%
 #   mutate(year = year(screresdat))
-# g <- ggplot(data = stage_chart, aes(x = year, fill = dukes_der)) + 
+# g <- ggplot(data = stage_chart, aes(x = year, fill = dukes_der)) +
 #   geom_bar(position = "dodge")
 # g
 
-# Test - monitor % of each dukes stage/numbers over time?
-
-#### GC at this point - 19/03/2019
-
-### Calculate screening participation history
-
-# Horrible way of doing this but can't figure out a way around it
-# Create dataset for each person's round of screening and then merge that
-
+## Calculate screening participation history
 # Create variable for latest round of screening available
-max_round <- max(slim_db$date_round)
+uptake_history <- slim_db %>%
+  mutate(date_round = recode(date_round,
+                             "1" = "uptake_rnd_1",
+                             "2" = "uptake_rnd_2",
+                             "3" = "uptake_rnd_3",
+                             "4" = "uptake_rnd_4",
+                             "5" = "uptake_rnd_5",
+                             "6" = "uptake_rnd_6")) %>%
+  spread(date_round, uptake_n) %>%
+  replace_na(list(uptake_rnd_1 = 0,
+                  uptake_rnd_2 = 0,
+                  uptake_rnd_3 = 0,
+                  uptake_rnd_4 = 0,
+                  uptake_rnd_5 = 0,
+                  uptake_rnd_6 = 0)) %>%
+  group_by(chinum) %>%
+  mutate(uptake_rnd_1 = max(uptake_rnd_1),
+         uptake_rnd_2 = max(uptake_rnd_2),
+         uptake_rnd_3 = max(uptake_rnd_3),
+         uptake_rnd_4 = max(uptake_rnd_4),         
+         uptake_rnd_5 = max(uptake_rnd_5),
+         uptake_rnd_6 = max(uptake_rnd_6)
+  ) %>%
+  ungroup() %>%
+  select(chinum, uptake_rnd_1:uptake_rnd_6) %>%
+  distinct()
 
+slim_db <- left_join(slim_db, uptake_history, by = "chinum")
 
-for(i in seq_along(x)){
-  assign(paste('X', i, sep=''), x[i])
-}
+# Create uptake history variable
+# Need to create something that doesn't need to be updated every time we run
+# Looping through variable names with with i 2:6, date_round = i-1, could work
+slim_db <- mutate(slim_db,
+                  
+                  uptake_history = case_when(
+                    date_round == 1 ~ "First round",
+                    
+                    (uptake_rnd_1 + 
+                       uptake_rnd_2 +
+                       uptake_rnd_3 +
+                       uptake_rnd_4 +
+                       uptake_rnd_5) == 0 &
+                      date_round == 6 ~ "Never participated",
+                    (uptake_rnd_1 +
+                       uptake_rnd_2 +
+                       uptake_rnd_3 +
+                       uptake_rnd_4) == 0 &
+                      date_round == 5 ~ "Never participated",           
+                    (uptake_rnd_1 +
+                       uptake_rnd_2 +
+                       uptake_rnd_3) == 0 &
+                      date_round == 4 ~ "Never participated",
+                    (uptake_rnd_1 +
+                       uptake_rnd_2) == 0 &
+                      date_round == 3 ~ "Never participated",
+                    uptake_rnd_1 == 0 &
+                      date_round == 2 ~ "Never participated",
+                    
+                    date_round == 2 &
+                      uptake_rnd_1 == 1 ~ "Participated in previous round",
+                    date_round == 3 &
+                      uptake_rnd_2 == 1 ~ "Participated in previous round",
+                    date_round == 4 &
+                      uptake_rnd_3 == 1 ~ "Participated in previous round",
+                    date_round == 5 & 
+                      uptake_rnd_4 == 1 ~ "Participated in previous round",
+                    date_round == 6 & 
+                      uptake_rnd_5 == 1 ~ "Participated in previous round",
+                    
+                    date_round == 2 &
+                      uptake_rnd_1 == 0 ~ "Didn't participate in previous round",
+                    date_round == 3 &
+                      uptake_rnd_2 == 0 ~ "Didn't participate in previous round",
+                    date_round == 4 &
+                      uptake_rnd_3 == 0 ~ "Didn't participate in previous round",
+                    date_round == 5 &
+                      uptake_rnd_4 == 0 ~ "Didn't participate in previous round",
+                    date_round == 6 &
+                      uptake_rnd_5 == 0 ~ "Didn't participate in previous round"
+                  ) ) 
 
-for (i in 1:max_round)
-  
-  {
-       uptake_rnd_i <- slim_db %>%
-         select(chinum, date_round, uptake_n) %>%
-         filter(date_round == i) %>%
-         mutate(paste0('uptake_n_', i) = uptake_n) %>%
-         select(-date_round)
-       assign(paste("uptake_rnd_", i, sep = ''), uptake_n_rnd)
-}
+# # Check versus FIT/FOBT report
+# slim_db %>% 
+#   mutate(
+#     test = case_when(
+#       between(invdate, as.Date("2016-11-20"), as.Date("2017-04-30")) ~ 1,
+#       between(invdate, as.Date("2017-11-20"), as.Date("2018-04-30")) ~ 2
+#       )
+#     ) %>%
+#   filter(test %in% 1:2) %>%
+#   group_by(test, uptake_history) %>%
+#   summarize(invite_n = sum(invite_n),
+#             uptake_p = sum(uptake_n)/sum(invite_n))
 
-# Need to find a way of automating this so that there is a dataset/variable for
-# the latest round
-uptake_rnd_i <- left_join(uptake_rnd_1, uptake_rnd_2, by = "chinum") %>%
-  left_join(uptake_rnd_3, by = "chinum") %>%
-  left_join(uptake_rnd_4, by = "chinum") %>%
-  left_join(uptake_rnd_5, by = "chinum") %>%
-  left_join(uptake_rnd_6, by = "chinum")
+#### Percentages in line with SPSS, counts are slightly out (low hundreds)
+# Need to pick up those with blank date round 1 with IT
 
-invdate_hist <- slim_db %>%
-  arrange(chinum, invdate) %>%
-  select(chinum, date_round, invdate) %>%
-  dcast(chinum ~ date_round)
-
-# Check number of unique rows
-slim_db %>% 
-  distinct(chinum) %>%
-  count()
-# Agrees with screening history file
-
-
-
-
-%>%
-  mutate(
-    
-    
-    
-    
-    screening_hist =
-      case_when(
-        is.na(screres_1) ~ "Error - no round 1",
-        
-        
-        
-      )
-  )
-# Need to pick up those with blank date round 1 with IT, flag for now
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+saveRDS(slim_db, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+                               "TPP/KPIs/Code + DB/analysis_dataset.rds"))
