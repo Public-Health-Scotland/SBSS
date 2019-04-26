@@ -26,7 +26,6 @@ library(reshape2)
 #   setting filepaths and extract dates
 
 ### Step 1 - Extract database, drop unnecessary columns and save as R file
-
 ## Bringing in optins version, as could produce opt-in report from same file
 
 raw_db <- read_sav(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Data/",
@@ -81,11 +80,12 @@ slim_db <- slim_db %>%
     col_perf_n = ifelse(colperf == "01", 1, 0),
     col_complete_n = ifelse(colcomp == "01", 1, 0),
     col_complic_n = ifelse(complicp %in% 
-                             c("01A","01B","01C","02","03","04","05","06","98"),
+                             c("01A","01B","01C","02","03","04","05","06","98") &
+                             colperf == "01",
                            1, 0),
     cancer_n = ifelse(cancer == "01", 1, 0),
     polyp_cancer_n = ifelse(polypca == "01", 1, 0),
-    adenoma_n = ifelse(adenoma == "01", 1, 0),
+    adenoma_n = ifelse(adenoma == "01" & cancer == "00", 1, 0),
     # adenoma risk stratification
     # low
     lr_adenoma_n = ifelse(
@@ -291,3 +291,5 @@ slim_db <- mutate(slim_db,
 
 saveRDS(slim_db, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
                                "TPP/KPIs/Code + DB/analysis_dataset.rds"))
+
+
