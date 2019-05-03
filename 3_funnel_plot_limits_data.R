@@ -54,17 +54,13 @@
 ### Step 1: Housekeeping
 
 ##Load packages
-#install.packages("tidyverse")
+#install.packages("invgamma")
 
 library(magrittr)
 library(dplyr)
 library(tidyr)
 library(lubridate)
-library(haven)
-library(readxl)
-library(janitor)
-library(binom)
-library(tidyverse)
+library(invgamma)
 
 
 ### Define two-year reporting period: 
@@ -111,7 +107,7 @@ analysis_db <- analysis_db %>%
   filter(hbr14 %in% 1:14)
 
 dim(analysis_db)
-str(analysis_db)
+
 
 
 ## Step 2: Calculate HB-level KPI denominator values for x-axis co-ordinates i.e.:
@@ -126,17 +122,6 @@ denom_n_hb <- analysis_db %>%
 
 # export
 
-# Calculate Scotland level values for each KPI (3,7,8,17,19,20)
-scot_p <- analysis_db %>%
-  summarise(
-    positive_p = sum(positive_n)/sum(uptake_n),
-    col_complic_p = sum(col_complic_n)/sum(col_perf_n),
-    cancer_p = sum(cancer_n)/sum(uptake_n),
-    polyp_cancer_p = sum(polyp_cancer_n)/sum(uptake_n),
-    adenoma_p = sum(adenoma_n)/sum(uptake_n),
-    hr_adenoma_p = sum(hr_adenoma_n)/sum(uptake_n)
-  )
-# export?
 
 ## Step 3: Calculate Wilson Score confidence limits (intervals).
 
@@ -156,9 +141,6 @@ scot_p <- analysis_db %>%
 # Export
 
 ## Create skeleton
-# KPI: 3,7,8,17,19,20
-# Sex: 3
-# n:
 KPI <- c(3,7,8,17,19,20)
 sex <- 3
 n <- c(1, 
@@ -169,137 +151,79 @@ n <- c(1,
        seq(11000, 19000, by=1000),
        seq(22000, 250000,  by=3000))
 
-skeleton <- crossing(KPI,sex,n)
+funnel_limits_skeleton <- crossing(KPI,sex,n)
 
 
-# Get Scotland KPI data from 'KPI data.xlsx' or its equivalent
-Scotland_KPIs_db <- read_excel(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                                      "TPP/KPIs/Code + DB/Data/KPI_data.xlsx"))
+#### Two ways to add the Scotland values to the skeleton
+### 1. Recalculate Scotland-level KPI estimates, then use an IF statements
 
+#Calculate Scotland level values for each KPI (3,7,8,17,19,20)
+#scot_p <- analysis_db %>%
+#  summarise(
+#    positive_p = sum(positive_n)/sum(uptake_n),
+#    col_complic_p = sum(col_complic_n)/sum(col_perf_n),
+#    cancer_p = sum(cancer_n)/sum(uptake_n),
+#    polyp_cancer_p = sum(polyp_cancer_n)/sum(uptake_n),
+#    adenoma_p = sum(adenoma_n)/sum(uptake_n),
+#    hr_adenoma_p = sum(hr_adenoma_n)/sum(uptake_n)
+#  )
+
+### 2. Pull in the Scotland-level KPI estimates from files produced in script 2.
+## Get Scotland KPI data from 'KPI data.xlsx' or its equivalent
+#Change this to the kpi_data.r file
+Scotland_KPIs_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+                                   "TPP/KPIs/Code + DB/Data/KPI_data.rds"))
 dim(Scotland_KPIs_db)
 names(Scotland_KPIs_db)
 
 Scotland_KPIs_db <- select(Scotland_KPIs_db, KPI, sex, "15") %>%
   filter(sex == 3) %>%
-  filter(KPI %in% c(3,7,8,17,19,20))
+  filter(KPI %in% c(3,7,8,17,19,20)) %>%
+  rename(Scotland_rate = "15")
 
 # Match them to add rates to skeleton.
-
-test.db <- left_join(skeleton, Scotland_KPIs_db, by = c("KPI","sex"))
-
-
-#### Calculate CIs
-
-test.db$p <- (test.db$`15`)/100
-
-
-test.db$lower95 <- 
-  
-  
-  
-  
-  test.db$p + 
-  
-  (2*test.db$p + qnorm(0.975)^2 - qnorm(0.975)*(sqrt(qnorm(0.975)^2 + (4*test.db$p*(1-test.db$p))) / 2*(test.db$n + qnorm(0.975)^2)))
-
-((p+idf.chisq(1-alpha,1)/(2*n)-idf.normal(1-(alpha/2),0,1)*sqrt((p*(1-p)+idf.chisq(1-alpha,1)/(4*n))/n))) / (1+idf.chisq(1-alpha,1)/n).
+conf_limits.db<- left_join(funnel_limits_skeleton, Scotland_KPIs_db, by = c("KPI","sex"))
+names(conf_limits.db)
 
 
 
+#### Calculate Warning and Control limits
 
+# These are calculated using the Wilson score CI method as:
+# 95% and 99% CIs for Scotland-level KPI rates at varying sample sizes defined by vector 'n'
 
+# The formula used in previous pulications as recommended by IBM and written for SPSS was:
+# compute Lower95CL=
+# ((p+idf.chisq(.95,1)/(2*n)-idf.normal(.975,0,1)*sqrt((p*(1-p)+idf.chisq(.95,1)/(4*n))/n))) / (1+idf.chisq(.95,1)/n).
+# compute Upper95CL=
+# ((p+idf.chisq(.95,1)/(2*n)+idf.normal(.975,0,1)*sqrt((p*(1-p)+idf.chisq(.95,1)/(4*n))/n))) / (1+idf.chisq(.95,1)/n).
 
-lower95CL=
-  
-  
-  
-  
-  test.db$lower95 <- (2*test.db$p + qnorm(0.975)^2 - qnorm(0.975)*(sqrt(qnorm(0.975)^2 + (4*test.db$p*(1-test.db$p))) / 2*(test.db$n + qnorm(0.975)^2)))
+# This implements the Wilson Score method for the 100(1–alpha)% confidence limits for the proportion;
+# where 'p' is a proportion (not a percentage representation), 'alpha' is a significance level and 
+# 'n' is the denominator of the proportion (e.g. total number of individuals in the sample/population). 		
+# Reference: http://www-01.ibm.com/support/docview.wss?uid=swg21480513 
 
-test.db$upper95 <- test.db$p + (qnorm(0.975)*sqrt((1/test.db$n)*test.db$p*(1-test.db$p)))
-p + c(-qnorm(0.975),qnorm(0.975))*sqrt((1/1000)*p*(1-p))
-[1] 0.4890345 0.5509655
+# To implement:
 
+# First, convert Scotland KPIs from percentages back to proportions.
+conf_limits.db$p <- (conf_limits.db$Scotland_rate)/100
 
-lower95CL=((p+idf.chisq(1-alpha,1)/(2*n)-idf.normal(1-(alpha/2),0,1)*sqrt((p*(1-p)+idf.chisq(1-alpha,1)/(4*n))/n))) / (1+idf.chisq(1-alpha,1)/n).
+# Define alpha for 95%CIs
+alphaA <- 0.05
 
-CI.file <-binconf(data.extract5$participants, data.extract5$invitees, alpha=0.05,
-                  method=c("wilson"),
-                  include.x=TRUE, include.n=TRUE, return.df=TRUE)
+# Calculate 95%CIs
+conf_limits.db$lower95 <- ((conf_limits.db$p + qchisq((1-alphaA),df=1)/(2*conf_limits.db$n) - qnorm(1-(alphaA/2),mean=0,sd=1)*sqrt((conf_limits.db$p*(1-conf_limits.db$p)+qchisq((1-alphaA),df=1)/(4*conf_limits.db$n))/conf_limits.db$n))) / (1+qchisq((1-alphaA),df=1)/conf_limits.db$n) 
+conf_limits.db$upper95 <- ((conf_limits.db$p + qchisq((1-alphaA),df=1)/(2*conf_limits.db$n) + qnorm(1-(alphaA/2),mean=0,sd=1)*sqrt((conf_limits.db$p*(1-conf_limits.db$p)+qchisq((1-alphaA),df=1)/(4*conf_limits.db$n))/conf_limits.db$n))) / (1+qchisq((1-alphaA),df=1)/conf_limits.db$n) 
 
+# Define alpha for 99%CIs
+alphaB <- 0.01
 
+# Calculate 99%CIs
+conf_limits.db$lower99 <- ((conf_limits.db$p + qchisq((1-alphaB),df=1)/(2*conf_limits.db$n) - qnorm(1-(alphaB/2),mean=0,sd=1)*sqrt((conf_limits.db$p*(1-conf_limits.db$p)+qchisq((1-alphaB),df=1)/(4*conf_limits.db$n))/conf_limits.db$n))) / (1+qchisq((1-alphaB),df=1)/conf_limits.db$n) 
+conf_limits.db$upper99 <- ((conf_limits.db$p + qchisq((1-alphaB),df=1)/(2*conf_limits.db$n) + qnorm(1-(alphaB/2),mean=0,sd=1)*sqrt((conf_limits.db$p*(1-conf_limits.db$p)+qchisq((1-alphaB),df=1)/(4*conf_limits.db$n))/conf_limits.db$n))) / (1+qchisq((1-alphaB),df=1)/conf_limits.db$n) 
 
-
-install.packages('Hmisc')
-library(Hmisc)
-
-??binconf
-binconf(0:10,10,include.x=TRUE,include.n=TRUE)
-binconf(46,50,method="all")
-
-
-
-test.db$successes <-  test.db 
-CIfile <- binom.confint(test.db$x, uptake_summary$n, 
-                        conf.level=0.95, methods=c("wilson"))
-
-??binom.confint
-CI.file <-binconf(data.extract5$participants, data.extract5$invitees, alpha=0.05,
-                  method=c("wilson"),
-                  include.x=TRUE, include.n=TRUE, return.df=TRUE)
-
-
-
-### Old code
-CI.file <-binconf(data.extract5$participants, data.extract5$invitees, alpha=0.05,
-                  method=c("wilson"),
-                  include.x=TRUE, include.n=TRUE, return.df=TRUE)
-
-#Conver to percentages
-CI.file$LowerCI<- CI.file$Lower*100
-CI.file$UpperCI <- CI.file$Upper*100
-
-# Merge
-names(CI.file)[2] <- "invitees"
-CI.file$invitees <- as.integer(CI.file$invitees)
-data.extract6 <- merge(data.extract5, CI.file,by="invitees")
-
-data.extract7 <- data.extract6[,c("hbr14", "invitees", "participants", "percent.uptake","LowerCI","UpperCI")]
-
-data.extract8 <- data.extract7[order(data.extract7$hbr14, decreasing = F),]
-
-### Gavin code
-## Add confidence intervals
-## Question for Jack - how are confidence intervals done in the tidyverse/within TPP? Found some information
-## with broom but not that helpful at a glance
-
-# Use Wilson Score confidence intervals
-uptake_summary_conf <- binom.confint(uptake_summary$x, uptake_summary$n, 
-                                     conf.level=0.95, methods=c("wilson")) %>%
-  # add in health board names
-  mutate(geography = c("Ayrshire and Arran",
-                       "Borders",
-                       "Dumfries and Galloway",
-                       "Fife",
-                       "Forth Valley",
-                       "Grampian",
-                       "Greater Glasgow and Clyde",
-                       "Highland",
-                       "Lanarkshire",
-                       "Lothian",
-                       "Orkney",
-                       "Shetland",
-                       "Tayside",
-                       "Western Isles",
-                       "All Scotland")) %>%
-  # rename and rearrange columns for output
-  rename(uptake_n = x, invited_n = n, uptake_rate = mean) %>%
-  select(geography, uptake_rate, lower, upper) %>%
-  # Multiply proportions by 100 to give percentages
-  # This has been the convention for bowel screening percentages, not
-  # set in stone for it to be done this way
-  mutate(uptake_rate = uptake_rate * 100) %>%
-  mutate(lower = lower * 100) %>%
-  mutate(upper = upper * 100)
-
-# Export
+#Convert CLs into %
+conf_limits.db$lower95 <- conf_limits.db$lower95 * 100
+conf_limits.db$upper95 <- conf_limits.db$upper95 * 100
+conf_limits.db$lower99 <- conf_limits.db$lower99 * 100
+conf_limits.db$upper99 <- conf_limits.db$upper99 * 100
