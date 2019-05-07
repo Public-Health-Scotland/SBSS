@@ -211,7 +211,7 @@ str(conf_limits.db)
 ## Finally reshape the data
 
 #Simplify dataset
-conf_limits.db <- select(conf_limits.db, -sex, -Scotland_rate, -p)
+conf_limits.db <- select(conf_limits.db, -sex, -p)
 
 #Create subsets by KPI to re-join
 kpi_3  <- filter(conf_limits.db, KPI ==  3)
