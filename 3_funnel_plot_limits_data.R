@@ -186,8 +186,6 @@ alpha <- 0.05
 # Calculate 95%CIs
 conf_limits.db$lower95 <- Wilson_lowerCI(conf_limits.db$p, alpha, conf_limits.db$n)
 conf_limits.db$upper95 <- Wilson_upperCI(conf_limits.db$p, alpha, conf_limits.db$n)
-#conf_limits.db$lower95 <- ((conf_limits.db$p + qchisq((1-alphaA),df=1)/(2*conf_limits.db$n) - qnorm(1-(alphaA/2),mean=0,sd=1)*sqrt((conf_limits.db$p*(1-conf_limits.db$p)+qchisq((1-alphaA),df=1)/(4*conf_limits.db$n))/conf_limits.db$n))) / (1+qchisq((1-alphaA),df=1)/conf_limits.db$n) 
-#conf_limits.db$upper95 <- ((conf_limits.db$p + qchisq((1-alphaA),df=1)/(2*conf_limits.db$n) + qnorm(1-(alphaA/2),mean=0,sd=1)*sqrt((conf_limits.db$p*(1-conf_limits.db$p)+qchisq((1-alphaA),df=1)/(4*conf_limits.db$n))/conf_limits.db$n))) / (1+qchisq((1-alphaA),df=1)/conf_limits.db$n) 
 
 # Define alpha for 99%CIs
 alpha <- 0.01
@@ -195,8 +193,6 @@ alpha <- 0.01
 # Calculate 99%CIs
 conf_limits.db$lower99 <- Wilson_lowerCI(conf_limits.db$p, alpha, conf_limits.db$n)
 conf_limits.db$upper99 <- Wilson_upperCI(conf_limits.db$p, alpha, conf_limits.db$n)
-#conf_limits.db$lower99 <- ((conf_limits.db$p + qchisq((1-alphaB),df=1)/(2*conf_limits.db$n) - qnorm(1-(alphaB/2),mean=0,sd=1)*sqrt((conf_limits.db$p*(1-conf_limits.db$p)+qchisq((1-alphaB),df=1)/(4*conf_limits.db$n))/conf_limits.db$n))) / (1+qchisq((1-alphaB),df=1)/conf_limits.db$n) 
-#conf_limits.db$upper99 <- ((conf_limits.db$p + qchisq((1-alphaB),df=1)/(2*conf_limits.db$n) + qnorm(1-(alphaB/2),mean=0,sd=1)*sqrt((conf_limits.db$p*(1-conf_limits.db$p)+qchisq((1-alphaB),df=1)/(4*conf_limits.db$n))/conf_limits.db$n))) / (1+qchisq((1-alphaB),df=1)/conf_limits.db$n) 
 
 #Convert CLs into %
 conf_limits.db$lower95 <- conf_limits.db$lower95 * 100
