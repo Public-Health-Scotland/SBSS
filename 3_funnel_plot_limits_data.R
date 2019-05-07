@@ -194,6 +194,7 @@ alpha <- 0.01
 conf_limits.db$lower99 <- Wilson_lowerCI(conf_limits.db$p, alpha, conf_limits.db$n)
 conf_limits.db$upper99 <- Wilson_upperCI(conf_limits.db$p, alpha, conf_limits.db$n)
 
+
 #Convert CLs into %
 conf_limits.db$lower95 <- conf_limits.db$lower95 * 100
 conf_limits.db$upper95 <- conf_limits.db$upper95 * 100
