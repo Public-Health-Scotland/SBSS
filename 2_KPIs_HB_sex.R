@@ -26,31 +26,34 @@ date_last <- "2018-04-30"
 # Define functions
 # Calculate ratio KPIs by health board and sex
 
-KPI_fraction <- function(num, den, kpi_no)
-{
+KPI_fraction <- function(num, den, kpi_no) {
   # By sex
   KPI_sex <- analysis_db %>%
     group_by(sex, hbr14) %>%
-    summarise(p = sum(!!sym(num)) / sum(!!sym(den)) * 100)
+    summarise(p = sum(!!sym(num)) / sum(!!sym(den)) * 100) %>%
+    ungroup()
   
   
   # For all sexes
   KPI_all <- analysis_db %>%
     group_by(hbr14) %>%
     summarise(p = sum(!!sym(num)) / sum(!!sym(den)) * 100) %>%
-    mutate(sex = 3)
+    mutate(sex = 3) %>%
+    ungroup()
   
   # Scotland sexes
   KPI_Scot_sex <- analysis_db %>%
     group_by(sex) %>%
     summarise(p = sum(!!sym(num)) / sum(!!sym(den)) * 100) %>%
-    mutate(hbr14 = 15)
+    mutate(hbr14 = 15) %>%
+    ungroup()
   
   # Scotland total
   KPI_Scot_all <- analysis_db %>%
     group_by() %>%
     summarise(p = sum(!!sym(num)) / sum(!!sym(den)) * 100) %>%
-    mutate(hbr14 = 15, sex = 3)
+    mutate(hbr14 = 15, sex = 3) %>%
+    ungroup()
   
   # Combine all of the above
   KPI_all <-
@@ -65,15 +68,14 @@ KPI_fraction <- function(num, den, kpi_no)
 # Proportion function
 
 KPI_proportion <-
-  function(filter_column, filter_value, by, count_var, kpi_no)
-    
-  {
+  function(filter_column, filter_value, by, count_var, kpi_no) {
     # By sex
     KPI_sex <- analysis_db %>%
       filter(!!sym(filter_column) != filter_value) %>%
       group_by(sex, hbr14,!!sym(by)) %>%
       summarise(n = sum(!!sym(count_var))) %>%
-      mutate(p = n / sum(n) )
+      mutate(p = n / sum(n) ) %>%
+      ungroup()
     
     # For all sexes
     KPI_all <- analysis_db %>%
@@ -81,7 +83,8 @@ KPI_proportion <-
       group_by(hbr14,!!sym(by)) %>%
       summarise(n = sum(!!sym(count_var)))  %>%
       mutate(sex = 3,
-             p = n / sum(n) )
+             p = n / sum(n) ) %>%
+      ungroup()
     
     # Scotland sexes
     KPI_Scot_sex <- analysis_db %>%
@@ -89,7 +92,8 @@ KPI_proportion <-
       group_by(sex,!!sym(by)) %>%
       summarise(n = sum(!!sym(count_var))) %>%
       mutate(hbr14 = 15,
-             p = n / sum(n) )
+             p = n / sum(n) ) %>%
+      ungroup()
     
     # Scotland total
     KPI_Scot_all <- analysis_db %>%
@@ -98,7 +102,8 @@ KPI_proportion <-
       summarise(n = sum(!!sym(count_var)) ) %>%
       mutate(hbr14 = 15, 
              sex = 3,
-             p = n / sum(n) )
+             p = n / sum(n) ) %>%
+      ungroup()
     
     # Combine all of the above
     KPI <- bind_rows(KPI_sex, KPI_all, KPI_Scot_sex, KPI_Scot_all) %>%
@@ -107,7 +112,8 @@ KPI_proportion <-
              p = p * 100) %>%
       select(-n) %>%
       spread(hbr14, p) %>% 
-      arrange(!!sym(by))
+      arrange(!!sym(by)) %>%
+      ungroup()
   }
 
 ### Step 2 - dataset preparation
@@ -176,25 +182,29 @@ KPI_25 <- KPI_fraction("all_neoplasia_n", "col_perf_n", 25)
 # By sex
 KPI_sex <- analysis_db %>%
   group_by(sex, hbr14, simd2016) %>%
-  summarise(p = sum(uptake_n) / sum(invite_n) * 100)
+  summarise(p = sum(uptake_n) / sum(invite_n) * 100) %>%
+  ungroup()
 
 # For all sexes
 KPI_all <- analysis_db %>%
   group_by(hbr14, simd2016) %>%
   summarise(p = sum(uptake_n) / sum(invite_n) * 100) %>%
-  mutate(sex = 3)
+  mutate(sex = 3) %>%
+  ungroup()
 
 # Scotland sexes
 KPI_Scot_sex <- analysis_db %>%
   group_by(sex, simd2016) %>%
   summarise(p = sum(uptake_n) / sum(invite_n) * 100) %>%
-  mutate(hbr14 = 15)
+  mutate(hbr14 = 15) %>%
+  ungroup()
 
 # Scotland total
 KPI_Scot_all <- analysis_db %>%
   group_by(simd2016) %>%
   summarise(p = sum(uptake_n) / sum(invite_n) * 100) %>%
-  mutate(hbr14 = 15, sex = 3)
+  mutate(hbr14 = 15, sex = 3) %>%
+  ungroup()
 
 # Combine all of the above
 KPI_2 <- bind_rows(KPI_sex, KPI_all, KPI_Scot_sex, KPI_Scot_all) %>%
@@ -238,7 +248,7 @@ KPI_data <- bind_rows(
   KPI_26_28
 )
 
-## Check this against excel
+# # Check this against excel
 # check <- KPI_data %>%
 #   ungroup() %>%
 #   filter(KPI != 9) %>%
@@ -263,13 +273,15 @@ sex_dem <- analysis_db %>%
   select(hbr14, sex, invite_n) %>%
   group_by(hbr14, sex) %>%
   summarise(invite_n = sum(invite_n)) %>%
-  spread(sex, invite_n)
+  spread(sex, invite_n) %>%
+  ungroup()
 
 age_dem <- analysis_db %>%
   select(hbr14, age_group, invite_n) %>%
   group_by(hbr14, age_group) %>%
   summarise(invite_n = sum(invite_n)) %>%
-  spread(age_group, invite_n)
+  spread(age_group, invite_n) %>%
+  ungroup()
 
 ## TO DO - need to figure out how we will order and output by health board, may
 ## be for the excel output script(s) or may be for here
@@ -278,7 +290,8 @@ simd_dem <- analysis_db %>%
   filter(!is.na(simd2016)) %>%
   group_by(hbr14, simd2016) %>%
   summarise(invite_n = sum(invite_n)) %>%
-  spread(simd2016, invite_n)
+  spread(simd2016, invite_n) %>%
+  ungroup()
 
 # Possible to do for future - number of cancers with no ICD10 included 
 # (tends to be zero)
@@ -304,4 +317,3 @@ saveRDS(age_dem, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
 saveRDS(simd_dem, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
                                 "TPP/KPIs/Code + DB/Data/simd_dem.rds")
 )
-
