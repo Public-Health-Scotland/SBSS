@@ -1,6 +1,6 @@
 
 ##########################################################
-# 1_analysis_dataset.R
+# Analysis_dataset_.R
 # Gavin Clark
 # 11/03/2019
 # Data extraction/preparation
@@ -28,8 +28,7 @@ library(reshape2)
 ### Step 1 - Extract database, drop unnecessary columns and save as R file
 ## Bringing in optins version, as could produce opt-in report from same file
 
-raw_db <- read_sav(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Data/",
-                          "Programme/2018-11/combined_extract_all.zsav"))
+raw_db <- read_sav(sbsdb_path)
 
 slim_db <- raw_db %>% select(
   -(PATSNAME:HBRES),
@@ -289,7 +288,6 @@ slim_db <- mutate(slim_db,
 #### Percentages in line with SPSS, counts are slightly out (low hundreds)
 # Need to pick up those with blank date round 1 with IT
 
-saveRDS(slim_db, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                               "TPP/KPIs/Code + DB/analysis_dataset.rds"))
+saveRDS(slim_db, file = analysis_db_path)
 
 
