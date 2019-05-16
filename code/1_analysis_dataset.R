@@ -1,4 +1,3 @@
-
 ##########################################################
 # Analysis_dataset_.R
 # Gavin Clark
@@ -23,7 +22,10 @@ library(ggplot2)
 library(tidyr)
 library(reshape2)
 
-#   setting filepaths and extract dates
+#   set filepaths and extract dates with script 0
+source(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+              "TPP/KPIs/Code + DB/0_housekeeping.R"))
+
 
 ### Step 1 - Extract database, drop unnecessary columns and save as R file
 ## Bringing in optins version, as could produce opt-in report from same file

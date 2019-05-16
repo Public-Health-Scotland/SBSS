@@ -19,6 +19,10 @@ library(dplyr)
 library(tidyr)
 library(readxl)
 
+#   set filepaths and extract dates with script 0
+source(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+              "TPP/KPIs/Code + DB/0_housekeeping.R"))
+
 # Define functions
 # Calculate ratio KPIs by health board and sex
 
