@@ -19,9 +19,8 @@ library(dplyr)
 library(tidyr)
 library(readxl)
 
-# Choose appropriate 2-year date range
-date_first <- "2016-05-01"
-date_last <- "2018-04-30"
+#   set filepaths and extract dates with script 0
+source(here::here("code", "0_housekeeping.R"))
 
 # Define functions
 # Calculate ratio KPIs by health board and sex
@@ -120,12 +119,7 @@ KPI_proportion <-
 
 # Bring in analysis database from script 1
 analysis_db <-
-  readRDS(
-    paste0(
-      "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-      "TPP/KPIs/Code + DB/analysis_dataset.rds"
-    )
-  )
+  readRDS(analysis_db_path)
 
 # Filter on dates
 analysis_db <- filter(analysis_db,
