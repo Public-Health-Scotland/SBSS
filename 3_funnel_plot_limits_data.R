@@ -1,12 +1,12 @@
 ##########################################################
 # 3_funnel_plot_limits_data.R
 # Thomas Godfrey
-# 03/05/2019
+# 28/05/2019
 # Script 3
 # Preparation of data for export (See Purpose)
 # Written/run on R Studio server: and so uses //PHI_conf/
 # R version 3.5.1 
-# This script creates CI data for funnel plots in Excel
+# This script creates Confidence Interval data for funnel plots in Excel
 # Transcribed from SPSS script "2_KPI_graphs_limits_N18.sps"
 # At:
 ##########################################################
@@ -17,18 +17,18 @@
 # are within acceptable warning and control limits (95 and 99% CIs, respectively).
 # These plots are cartesian graphs with KPI rates on the Y-axis and rate-denominators
 # on the X-axis. The 'funnel' consists of warning & control CIs estimated for the
-# Scotland-level KPI rate, but using a continuous series of made-up values for 
+# Scotland-level KPI rate, but using a continuous series of possible values for 
 # the denominator/x-axis - which is the number of people 'n' in the population
-# of patients appropriate for that KPI. HBs are then plotted individually using 
-# their KPI rate (y-axis co-ordinate) and the number of people 'n' in the HB in 
-# the category of patients used as the rate-denominator (x-axis co-ordinate).
+# of patients appropriate for that KPI. HBs are then plotted individually, with
+# their KPI rate and the number of people 'n' in the HB - in the category of 
+# patients used as the rate-denominator - providing y- and x-axis co-ordinates).
 
 ### This script has two aims:
 # 1. to export relevant KPI rate-denominator values to provide the x-axis
 #     co-ordinates needed to plot HB datapoints on funnel plots (corresponding
 #     Y-axis values (HB KPI estimates) are available from 'KPI data.xlsx')
 # 2. to generate a dataset, for each KPI, of 95% and 99% confidence intervals, 
-#     for the Scotland-level KPI rate, using a series of made-up values for the
+#     for the Scotland-level KPI rate, using a series of possible values for the
 #     KPI denominator. These datasets of upper and lower CIs then provide
 #     the x- and y-axis co-ordinates for plotting warning and control limits.
 
@@ -55,15 +55,27 @@
 
 ### Step 1: Housekeeping
 
-##Load packages
-install.packages("invgamma")
-install.packages("readr")
+## Load packages
+
 library(readr)
+library(janitor)
 library(magrittr)
 library(dplyr)
 library(tidyr)
 library(lubridate)
 library(invgamma)
+
+
+## Set filepaths and import reporting period dates from Script 0
+
+# Define location of analysis database (created in script 1)
+#source(here::here("code", "0_housekeeping.R"))
+#currently use direct import since 'here' not working. Replace later.
+analysis_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+                              "TPP/KPIs/Code + DB/TPP/data/analysis_dataset.rds"))
+# Directly define dates but delete later.
+date_first <- "2016-05-01"
+date_last  <- "2018-04-30"
 
 
 ## Define functions
@@ -75,32 +87,42 @@ library(invgamma)
 # (e.g. total number of individuals in the sample/population). 		
 # Reference: http://www-01.ibm.com/support/docview.wss?uid=swg21480513 
 
-Wilson_lowerCI <- function(kpi_p, alpha, n){
-  
-  ((kpi_p + qchisq((1-alpha),df=1)/(2*n) - qnorm(1-(alpha/2),mean=0,sd=1)*sqrt((kpi_p*(1-kpi_p)+qchisq((1-alpha),df=1)/(4*n))/n))) / (1+qchisq((1-alpha),df=1)/n)   
+Wilson_lower95CI <- function(kpi_p, n){
+  ((kpi_p + qchisq((1-0.05),df=1)/(2*n) - qnorm(1-(0.05/2),mean=0,sd=1)
+    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-0.05),df=1)/(4*n))/n))) / 
+    (1+qchisq((1-0.05),df=1)/n)   
+}
+
+Wilson_upper95CI <- function(kpi_p, n){
+  ((kpi_p + qchisq((1-0.05),df=1)/(2*n) + qnorm(1-(0.05/2),mean=0,sd=1)
+    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-0.05),df=1)/(4*n))/n))) / 
+    (1+qchisq((1-0.05),df=1)/n)   
 }
 
 
-Wilson_upperCI <- function(kpi_p, alpha, n){
-  
-  ((kpi_p + qchisq((1-alpha),df=1)/(2*n) + qnorm(1-(alpha/2),mean=0,sd=1)*sqrt((kpi_p*(1-kpi_p)+qchisq((1-alpha),df=1)/(4*n))/n))) / (1+qchisq((1-alpha),df=1)/n)   
+Wilson_lower99CI <- function(kpi_p, n){
+  ((kpi_p + qchisq((1-0.01),df=1)/(2*n) - qnorm(1-(0.01/2),mean=0,sd=1)
+    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-0.01),df=1)/(4*n))/n))) / 
+    (1+qchisq((1-0.01),df=1)/n)   
+}
+
+Wilson_upper99CI <- function(kpi_p, n){
+  ((kpi_p + qchisq((1-0.01),df=1)/(2*n) + qnorm(1-(0.01/2),mean=0,sd=1)
+    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-0.01),df=1)/(4*n))/n))) / 
+    (1+qchisq((1-0.01),df=1)/n)   
 }
 
 
+### Step 2: Import data
 
-### Define two-year reporting period: 
-#1 May 2016 to 30 April 2018
-start_period <- "2016-05-01"
-end_period   <- "2018-04-30"
+#Import analysis database from script 1
+#Keep this code and delete above when 'here' works
+#analysis_db <- readRDS(analysis_db_path)
 
-
-### Step 2: Bring in analysis database from script 1 and then filter data.
-analysis_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                              "TPP/KPIs/Code + DB/analysis_dataset.rds"))
 dim(analysis_db)
 names(analysis_db)
 
-# Use Select statement to keep only required variables
+# Then use Select statement to keep only required variables
 slim_db <- select(analysis_db, 
                   c('invdate', 'sex', 'hbr14', 'optin', 
                     'invite_n', 'uptake_n', 'col_perf_n', 'positive_n', 
@@ -108,9 +130,9 @@ slim_db <- select(analysis_db,
 dim(slim_db)
 
 
-# Use Filter statement to keep only data from report period
+# Use Filter statement to keep only data from reporting period
 slim_db <- slim_db %>%
-  filter(invdate >= as.Date(start_period) & invdate <= as.Date(end_period)) %>%
+  filter(invdate >= as.Date(date_first) & invdate <= as.Date(date_last)) %>%
   filter(optin == 0) %>%
   filter(hbr14 %in% 1:14)
 
@@ -125,10 +147,11 @@ denom_n_hb <- slim_db %>%
   group_by(hbr14) %>%
   summarise( uptake_n = sum(uptake_n),
              col_perf_n = sum(col_perf_n))
+denom_n_hb <- ungroup(denom_n_hb)
 
 # export
 write_excel_csv(denom_n_hb, 
-                path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/Code + DB/Data/Funnel-data_HB-denominators.csv"))
+                path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/Code + DB/TPP/data/Funnel-data_HB-denominators.csv"))
 
 
 ## Step 3: Calculate Wilson Score confidence intervals.
@@ -161,7 +184,7 @@ funnel_limits_skeleton <- crossing(KPI,sex,n)
 #Note: could alternatively recalculate estimates on-the-fly & label with KPI no. & sex.
 
 Scotland_KPIs_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                                   "TPP/KPIs/Code + DB/Data/KPI_data.rds"))
+                                   "TPP/KPIs/Code + DB/TPP/data/KPI_data.rds"))
 dim(Scotland_KPIs_db)
 names(Scotland_KPIs_db)
 
@@ -180,19 +203,13 @@ head(conf_limits.db)
 # First, convert Scotland KPIs from percentages back to proportions.
 conf_limits.db$p <- (conf_limits.db$Scotland_rate)/100
 
-# Define alpha for 95%CIs 
-alpha <- 0.05
-
 # Calculate 95%CIs
-conf_limits.db$lower95 <- Wilson_lowerCI(conf_limits.db$p, alpha, conf_limits.db$n)
-conf_limits.db$upper95 <- Wilson_upperCI(conf_limits.db$p, alpha, conf_limits.db$n)
-
-# Define alpha for 99%CIs
-alpha <- 0.01
+conf_limits.db$lower95 <- Wilson_lower95CI(conf_limits.db$p, alpha, conf_limits.db$n)
+conf_limits.db$upper95 <- Wilson_upper95CI(conf_limits.db$p, alpha, conf_limits.db$n)
 
 # Calculate 99%CIs
-conf_limits.db$lower99 <- Wilson_lowerCI(conf_limits.db$p, alpha, conf_limits.db$n)
-conf_limits.db$upper99 <- Wilson_upperCI(conf_limits.db$p, alpha, conf_limits.db$n)
+conf_limits.db$lower99 <- Wilson_lower99CI(conf_limits.db$p, alpha, conf_limits.db$n)
+conf_limits.db$upper99 <- Wilson_upper99CI(conf_limits.db$p, alpha, conf_limits.db$n)
 
 
 #Convert CLs into %
@@ -231,4 +248,4 @@ conf_limits_output <- bind_cols(kpi_3,kpi_7,kpi_8,kpi_17,kpi_19,kpi_20,.id = NUL
 
 #Export
 write_excel_csv(conf_limits_output, 
-                path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/Code + DB/Data/Funnel-data_Confidence-limits.csv"))
+                path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/Code + DB/TPP/data/Funnel-data_Confidence-limits.csv"))
