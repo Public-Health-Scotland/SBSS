@@ -29,10 +29,10 @@ analysis_db <-
 # Create year definition
 # Not a great way of doing this, struggling to think of a better way currently
 # GC next - create dataset with just required variables and transpose year_ variables
-  analysis_db <- analysis_db %>%
-    mutate(
+analysis_db <- analysis_db %>%
+  mutate(
     year_07_09 = ifelse(invdate >= as.Date("2007-05-01") &
-                        invdate <= as.Date("2009-04-30"),
+                          invdate <= as.Date("2009-04-30"),
                         1, 0),
     year_08_10 = ifelse(invdate >= as.Date("2008-05-01") &
                           invdate <= as.Date("2010-04-30"),
@@ -60,62 +60,75 @@ analysis_db <-
                         1, 0),
     year_16_18 = ifelse(invdate >= as.Date("2016-05-01") &
                           invdate <= as.Date("2018-04-30"),
-                        1, 0)
+                        1, 0),
+    
+    canc_col_n = cancer_n * col_perf_n,
+    adenoma_col_n = adenoma_n * col_perf_n
   ) 
 
-# Calculate invites in each time period
-  uptake_ts <- analysis_db %>%
+# GC TO DO - automate so that date basis changes depending on whether
+# report period is May-April or Nov-Oct
+
+# Create function
+# Create PPV as part of script
+
+ts_function <- function(denominator, numerator, KPI_no) {
+  # Calculate invites in each time period
+  kpi_ts <- analysis_db %>%
     mutate(
-      # Invite number
-      invite_07_09 = year_07_09 * invite_n,
-      invite_08_10 = year_08_10 * invite_n,
-      invite_09_11 = year_09_11 * invite_n,
-      invite_10_12 = year_10_12 * invite_n,
-      invite_11_13 = year_11_13 * invite_n,
-      invite_12_14 = year_12_14 * invite_n,
-      invite_13_15 = year_13_15 * invite_n,
-      invite_14_16 = year_14_16 * invite_n,
-      invite_15_17 = year_15_17 * invite_n,
-      invite_16_18 = year_16_18 * invite_n,
-      # Uptake number
-      uptake_07_09 = year_07_09 * uptake_n,
-      uptake_08_10 = year_08_10 * uptake_n,
-      uptake_09_11 = year_09_11 * uptake_n,
-      uptake_10_12 = year_10_12 * uptake_n,
-      uptake_11_13 = year_11_13 * uptake_n,
-      uptake_12_14 = year_12_14 * uptake_n,
-      uptake_13_15 = year_13_15 * uptake_n,
-      uptake_14_16 = year_14_16 * uptake_n,
-      uptake_15_17 = year_15_17 * uptake_n,
-      uptake_16_18 = year_16_18 * uptake_n) %>%
-    select(sex, invite_07_09:uptake_16_18) 
+      # Denominator by year
+      denom_07_09 = year_07_09 * !! sym(denominator),
+      denom_08_10 = year_08_10 * !! sym(denominator),
+      denom_09_11 = year_09_11 * !! sym(denominator),
+      denom_10_12 = year_10_12 * !! sym(denominator),
+      denom_11_13 = year_11_13 * !! sym(denominator),
+      denom_12_14 = year_12_14 * !! sym(denominator),
+      denom_13_15 = year_13_15 * !! sym(denominator),
+      denom_14_16 = year_14_16 * !! sym(denominator),
+      denom_15_17 = year_15_17 * !! sym(denominator),
+      denom_16_18 = year_16_18 * !! sym(denominator),
+      # !! sym(numerator) by year
+      num_07_09 = year_07_09 * !! sym(numerator),
+      num_08_10 = year_08_10 * !! sym(numerator),
+      num_09_11 = year_09_11 * !! sym(numerator),
+      num_10_12 = year_10_12 * !! sym(numerator),
+      num_11_13 = year_11_13 * !! sym(numerator),
+      num_12_14 = year_12_14 * !! sym(numerator),
+      num_13_15 = year_13_15 * !! sym(numerator),
+      num_14_16 = year_14_16 * !! sym(numerator),
+      num_15_17 = year_15_17 * !! sym(numerator),
+      num_16_18 = year_16_18 * !! sym(numerator)) %>%
+    select(sex, denom_07_09:num_16_18) 
   
-  male_ts <- uptake_ts %>%
+  # Males only
+  male_ts <- kpi_ts %>%
     filter(sex == 1) %>%
     gather(key = "year", value = "n", -sex) %>%
     group_by(year) %>%
     summarise(n = sum(n)) %>%
-    mutate(KPI = 1,
+    mutate(KPI = KPI_no,
            sex = "Males") %>%
     ungroup() %>% 
     separate(year, c("metric","year")) %>%
     mutate(
       year2 = as.character(
         ifelse(as.numeric(year) + 2 == 9,
-                "09",
-                as.numeric(year) + 2
-                )),
+               "09",
+               as.numeric(year) + 2
+        )),
       report_yr = as.character(paste0("20", year,"/", year2))) %>%
     spread(key = metric, value = n) %>% 
-    mutate(KPI_rate = uptake/invite) %>%
+    mutate(KPI_rate = num/denom*100) %>%
     select(KPI, report_yr, sex, KPI_rate)
   
-  female_ts <- uptake_ts %>%
+  
+  # Females only
+  female_ts <- kpi_ts %>%
     filter(sex == 2) %>%
     gather(key = "year", value = "n", -sex) %>%
     group_by(year) %>%
     summarise(n = sum(n)) %>%
-    mutate(KPI = 1,
+    mutate(KPI = KPI_no,
            sex = "Females") %>%
     ungroup() %>% 
     separate(year, c("metric","year")) %>%
@@ -127,14 +140,15 @@ analysis_db <-
         )),
       report_yr = as.character(paste0("20", year,"/", year2))) %>%
     spread(key = metric, value = n) %>% 
-    mutate(KPI_rate = uptake/invite) %>%
+    mutate(KPI_rate = num/denom*100) %>%
     select(KPI, report_yr, sex, KPI_rate)
   
-  all_ts <- uptake_ts %>%
+  # All persons
+  all_ts <- kpi_ts %>%
     gather(key = "year", value = "n", -sex) %>%
     group_by(year) %>%
     summarise(n = sum(n)) %>%
-    mutate(KPI = 1,
+    mutate(KPI = KPI_no,
            sex = "Persons") %>%
     ungroup() %>% 
     separate(year, c("metric","year")) %>%
@@ -146,15 +160,30 @@ analysis_db <-
         )),
       report_yr = as.character(paste0("20", year,"/", year2))) %>%
     spread(key = metric, value = n) %>% 
-    mutate(KPI_rate = uptake/invite) %>%
+    mutate(KPI_rate = num/denom*100) %>%
     select(KPI, report_yr, sex, KPI_rate)
   
-## GC HERE - next
-  # check outputs vs. SPSS
-  # create function
-  # check outputs for all KPIs
-  # SII/RII
+  output <- bind_rows(male_ts, female_ts, all_ts)
+}
 
+
+uptake_ts <- ts_function("invite_n", "uptake_n", 1)
+positivity_ts <- ts_function("uptake_n", "positive_n", 3)
+cancer_ts <- ts_function("uptake_n", "cancer_n", 8)
+adenoma_ts <- ts_function("uptake_n", "adenoma_n", 19)
+cancer_ppv_ts <- ts_function("col_perf_n", "canc_col_n", 21)
+adenoma_ppv_ts <- ts_function("col_perf_n", "adenoma_col_n", 22)
+
+ts_data <- bind_rows(uptake_ts, positivity_ts, cancer_ts, adenoma_ts, 
+                     cancer_ppv_ts, adenoma_ppv_ts)
+# Matches output from previous publication
+
+saveRDS(ts_data, paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+                        "TPP/KPIs/Code + DB/TPP/data/ts_data.rds"))
+
+# make consistent with functions in other scripts in terms of order, naming etc
+## GC HERE - next
+# SII/RII
 
 # KPI 2 - SII/RII
 simd <- analysis_db %>%
@@ -175,9 +204,3 @@ rii(data = health_data,
     ses = quintile, 
     age = age)
 ethnicity == "all")
-# KPI 3 - Positivity
-# KPI 8 - Cancer detection
-# KPI 9-15 - Dukes staging
-# KPI 19 - Adenoma detection
-# KPI 21 - Cancer PPV
-# KPI 22 - Adenoma PPV
