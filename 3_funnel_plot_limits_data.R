@@ -56,26 +56,14 @@
 ### Step 1: Housekeeping
 
 ## Load packages
-
+library(here)
+library(dplyr)
 library(readr)
 library(janitor)
 library(magrittr)
-library(dplyr)
 library(tidyr)
 library(lubridate)
 library(invgamma)
-
-
-## Set filepaths and import reporting period dates from Script 0
-
-# Define location of analysis database (created in script 1)
-#source(here::here("code", "0_housekeeping.R"))
-#currently use direct import since 'here' not working. Replace later.
-analysis_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                              "TPP/KPIs/Code + DB/TPP/data/analysis_dataset.rds"))
-# Directly define dates but delete later.
-date_first <- "2016-05-01"
-date_last  <- "2018-04-30"
 
 
 ## Define functions
@@ -87,37 +75,35 @@ date_last  <- "2018-04-30"
 # (e.g. total number of individuals in the sample/population). 		
 # Reference: http://www-01.ibm.com/support/docview.wss?uid=swg21480513 
 
-Wilson_lower95CI <- function(kpi_p, n){
-  ((kpi_p + qchisq((1-0.05),df=1)/(2*n) - qnorm(1-(0.05/2),mean=0,sd=1)
-    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-0.05),df=1)/(4*n))/n))) / 
-    (1+qchisq((1-0.05),df=1)/n)   
+Wilson_lowerCI <- function(kpi_p, alpha, n){
+  ((kpi_p + qchisq((1-alpha),df=1)/(2*n) - qnorm(1-(alpha/2),mean=0,sd=1)
+    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-alpha),df=1)/(4*n))/n))) / 
+    (1+qchisq((1-alpha),df=1)/n)   
 }
 
-Wilson_upper95CI <- function(kpi_p, n){
-  ((kpi_p + qchisq((1-0.05),df=1)/(2*n) + qnorm(1-(0.05/2),mean=0,sd=1)
-    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-0.05),df=1)/(4*n))/n))) / 
-    (1+qchisq((1-0.05),df=1)/n)   
+Wilson_upperCI <- function(kpi_p, alpha, n){
+  ((kpi_p + qchisq((1-alpha),df=1)/(2*n) + qnorm(1-(alpha/2),mean=0,sd=1)
+    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-alpha),df=1)/(4*n))/n))) / 
+    (1+qchisq((1-alpha),df=1)/n)   
 }
 
 
-Wilson_lower99CI <- function(kpi_p, n){
-  ((kpi_p + qchisq((1-0.01),df=1)/(2*n) - qnorm(1-(0.01/2),mean=0,sd=1)
-    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-0.01),df=1)/(4*n))/n))) / 
-    (1+qchisq((1-0.01),df=1)/n)   
-}
 
-Wilson_upper99CI <- function(kpi_p, n){
-  ((kpi_p + qchisq((1-0.01),df=1)/(2*n) + qnorm(1-(0.01/2),mean=0,sd=1)
-    *sqrt((kpi_p*(1-kpi_p)+qchisq((1-0.01),df=1)/(4*n))/n))) / 
-    (1+qchisq((1-0.01),df=1)/n)   
-}
+## Set filepaths to the SBSP analysis database and import reporting period dates 
+source(here::here("code", "0_housekeeping.R"))
 
+##########################################################################
+# Source function call currently working. Delete this code when properly running scripts.
+#analysis_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+#                            "TPP/KPIs/Code + DB/TPP/data/analysis_dataset.rds"))
+# Directly define dates but delete later.
+#date_first <- "2016-05-01"
+#date_last  <- "2018-04-30"
+##########################################################################
 
 ### Step 2: Import data
-
 #Import analysis database from script 1
-#Keep this code and delete above when 'here' works
-#analysis_db <- readRDS(analysis_db_path)
+analysis_db <- readRDS(analysis_db_path)
 
 dim(analysis_db)
 names(analysis_db)
@@ -132,9 +118,9 @@ dim(slim_db)
 
 # Use Filter statement to keep only data from reporting period
 slim_db <- slim_db %>%
-  filter(invdate >= as.Date(date_first) & invdate <= as.Date(date_last)) %>%
-  filter(optin == 0) %>%
-  filter(hbr14 %in% 1:14)
+            filter(invdate >= as.Date(date_first) & invdate <= as.Date(date_last)) %>%
+            filter(optin == 0) %>%
+            filter(hbr14 %in% 1:14)
 
 dim(slim_db)
 head(slim_db)
@@ -144,12 +130,12 @@ head(slim_db)
 # the number of people who completed kits with a final result
 # the number of people with positive result having a colonoscopy performed
 denom_n_hb <- slim_db %>%
-  group_by(hbr14) %>%
-  summarise( uptake_n = sum(uptake_n),
-             col_perf_n = sum(col_perf_n))
-denom_n_hb <- ungroup(denom_n_hb)
+                group_by(hbr14) %>%
+                summarise( uptake_n = sum(uptake_n),
+                           col_perf_n = sum(col_perf_n)) %>%
+                ungroup()
 
-# export
+# Save output file
 write_excel_csv(denom_n_hb, 
                 path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/Code + DB/TPP/data/Funnel-data_HB-denominators.csv"))
 
@@ -189,9 +175,9 @@ dim(Scotland_KPIs_db)
 names(Scotland_KPIs_db)
 
 Scotland_KPIs_db <- select(Scotland_KPIs_db, KPI, sex, "15") %>%
-  filter(sex == 3) %>%
-  filter(KPI %in% c(3,7,8,17,19,20)) %>%
-  rename(Scotland_rate = "15")
+                      filter(sex == 3) %>%
+                      filter(KPI %in% c(3,7,8,17,19,20)) %>%
+                      rename(Scotland_rate = "15")
 
 # Match them to add rates to skeleton.
 conf_limits.db<- left_join(funnel_limits_skeleton, Scotland_KPIs_db, by = c("KPI","sex"))
@@ -204,12 +190,12 @@ head(conf_limits.db)
 conf_limits.db$p <- (conf_limits.db$Scotland_rate)/100
 
 # Calculate 95%CIs
-conf_limits.db$lower95 <- Wilson_lower95CI(conf_limits.db$p, alpha, conf_limits.db$n)
-conf_limits.db$upper95 <- Wilson_upper95CI(conf_limits.db$p, alpha, conf_limits.db$n)
+conf_limits.db$lower95 <- Wilson_lowerCI(conf_limits.db$p, alpha=0.05, conf_limits.db$n)
+conf_limits.db$upper95 <- Wilson_upperCI(conf_limits.db$p, alpha=0.05, conf_limits.db$n)
 
 # Calculate 99%CIs
-conf_limits.db$lower99 <- Wilson_lower99CI(conf_limits.db$p, alpha, conf_limits.db$n)
-conf_limits.db$upper99 <- Wilson_upper99CI(conf_limits.db$p, alpha, conf_limits.db$n)
+conf_limits.db$lower99 <- Wilson_lowerCI(conf_limits.db$p, alpha=0.01, conf_limits.db$n)
+conf_limits.db$upper99 <- Wilson_upperCI(conf_limits.db$p, alpha=0.01, conf_limits.db$n)
 
 
 #Convert CLs into %
@@ -246,6 +232,6 @@ colnames(kpi_20) <- paste("kpi_20", colnames(kpi_20), sep = "_")
 #Bind tables together
 conf_limits_output <- bind_cols(kpi_3,kpi_7,kpi_8,kpi_17,kpi_19,kpi_20,.id = NULL)
 
-#Export
+#Save output file
 write_excel_csv(conf_limits_output, 
                 path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/Code + DB/TPP/data/Funnel-data_Confidence-limits.csv"))
