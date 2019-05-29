@@ -1,7 +1,7 @@
 ##########################################################
 # 4_time_series.R
 # Gavin Clark
-# 26/04/2019
+# 29/05/2019
 # Script 4 of ?
 # Data preparation and summary for export
 # Written/run on R Studio Server
@@ -19,17 +19,117 @@ library(tidyr)
 # set filepaths and extract dates with script 0
 source(here::here("code", "0_housekeeping.R"))
 
+
+# Create function for time series for desired kpi by male, female, all
+ts_function <- function(denominator, numerator, KPI_no) {
+  
+  kpi_ts <- analysis_db %>%
+    mutate(
+      # Denominator by year
+      denom_07_09 = year_07_09 * !! sym(denominator),
+      denom_08_10 = year_08_10 * !! sym(denominator),
+      denom_09_11 = year_09_11 * !! sym(denominator),
+      denom_10_12 = year_10_12 * !! sym(denominator),
+      denom_11_13 = year_11_13 * !! sym(denominator),
+      denom_12_14 = year_12_14 * !! sym(denominator),
+      denom_13_15 = year_13_15 * !! sym(denominator),
+      denom_14_16 = year_14_16 * !! sym(denominator),
+      denom_15_17 = year_15_17 * !! sym(denominator),
+      denom_16_18 = year_16_18 * !! sym(denominator),
+      # Numerator by year
+      num_07_09 = year_07_09 * !! sym(numerator),
+      num_08_10 = year_08_10 * !! sym(numerator),
+      num_09_11 = year_09_11 * !! sym(numerator),
+      num_10_12 = year_10_12 * !! sym(numerator),
+      num_11_13 = year_11_13 * !! sym(numerator),
+      num_12_14 = year_12_14 * !! sym(numerator),
+      num_13_15 = year_13_15 * !! sym(numerator),
+      num_14_16 = year_14_16 * !! sym(numerator),
+      num_15_17 = year_15_17 * !! sym(numerator),
+      num_16_18 = year_16_18 * !! sym(numerator)) %>%
+    select(sex, denom_07_09:num_16_18) 
+  
+  # Males only
+  male_ts <- kpi_ts %>%
+    filter(sex == 1) %>%
+    gather(key = "year", value = "n", -sex) %>%
+    group_by(year) %>%
+    summarise(n = sum(n)) %>%
+    mutate(KPI = KPI_no,
+           sex = "Males") %>%
+    ungroup() %>% 
+    separate(year, c("metric","year")) %>%
+    # Create 2-year period level in formay YYYY/YY
+    mutate(
+      year2 = as.character(
+        ifelse(as.numeric(year) + 2 == 9,
+               "09",
+               as.numeric(year) + 2
+        )),
+      report_yr = as.character(paste0("20", year,"/", year2))) %>%
+    spread(key = metric, value = n) %>% 
+    mutate(KPI_rate = num/denom*100) %>%
+    select(KPI, report_yr, sex, KPI_rate)
+  
+  
+  # Females only
+  female_ts <- kpi_ts %>%
+    filter(sex == 2) %>%
+    gather(key = "year", value = "n", -sex) %>%
+    group_by(year) %>%
+    summarise(n = sum(n)) %>%
+    mutate(KPI = KPI_no,
+           sex = "Females") %>%
+    ungroup() %>% 
+    separate(year, c("metric","year")) %>%
+    # Create 2-year period level in formay YYYY/YY
+    mutate(
+      year2 = as.character(
+        ifelse(as.numeric(year) + 2 == 9,
+               "09",
+               as.numeric(year) + 2
+        )),
+      report_yr = as.character(paste0("20", year,"/", year2))) %>%
+    spread(key = metric, value = n) %>% 
+    mutate(KPI_rate = num/denom*100) %>%
+    select(KPI, report_yr, sex, KPI_rate)
+  
+  # All persons
+  all_ts <- kpi_ts %>%
+    gather(key = "year", value = "n", -sex) %>%
+    group_by(year) %>%
+    summarise(n = sum(n)) %>%
+    mutate(KPI = KPI_no,
+           sex = "Persons") %>%
+    ungroup() %>% 
+    separate(year, c("metric","year")) %>%
+    # Create 2-year period level in formay YYYY/YY
+    mutate(
+      year2 = as.character(
+        ifelse(as.numeric(year) + 2 == 9,
+               "09",
+               as.numeric(year) + 2
+        )),
+      report_yr = as.character(paste0("20", year,"/", year2))) %>%
+    spread(key = metric, value = n) %>% 
+    mutate(KPI_rate = num/denom*100) %>%
+    select(KPI, report_yr, sex, KPI_rate)
+  
+  output <- bind_rows(male_ts, female_ts, all_ts)
+}
+
 # Step 2 - prep
 # Bring in analysis database from script 1
 analysis_db <-
   readRDS(analysis_db_path) %>%
   filter(optin == 0 &
-           hbr14 %in% 1:14)
-
-# Create year definition
-# Not a great way of doing this, struggling to think of a better way currently
-# GC next - create dataset with just required variables and transpose year_ variables
-analysis_db <- analysis_db %>%
+           hbr14 %in% 1:14) %>%
+  
+  # Create year definition
+  # Not a great way of doing this, struggling to think of a better way currently
+  # Problem is creating a rolling 2 year period, shifted on by a year at a time
+  # This means that the same record needs to end up in 2 periods e.g. a test in
+  # May 2009 should be in 2008/10 and 2009/11
   mutate(
     year_07_09 = ifelse(invdate >= as.Date("2007-05-01") &
                           invdate <= as.Date("2009-04-30"),
@@ -61,7 +161,7 @@ analysis_db <- analysis_db %>%
     year_16_18 = ifelse(invdate >= as.Date("2016-05-01") &
                           invdate <= as.Date("2018-04-30"),
                         1, 0),
-    
+    # Create cancer definitions for PPV measures
     canc_col_n = cancer_n * col_perf_n,
     adenoma_col_n = adenoma_n * col_perf_n
   ) 
@@ -69,104 +169,7 @@ analysis_db <- analysis_db %>%
 # GC TO DO - automate so that date basis changes depending on whether
 # report period is May-April or Nov-Oct
 
-# Create function
-# Create PPV as part of script
-
-ts_function <- function(denominator, numerator, KPI_no) {
-  # Calculate invites in each time period
-  kpi_ts <- analysis_db %>%
-    mutate(
-      # Denominator by year
-      denom_07_09 = year_07_09 * !! sym(denominator),
-      denom_08_10 = year_08_10 * !! sym(denominator),
-      denom_09_11 = year_09_11 * !! sym(denominator),
-      denom_10_12 = year_10_12 * !! sym(denominator),
-      denom_11_13 = year_11_13 * !! sym(denominator),
-      denom_12_14 = year_12_14 * !! sym(denominator),
-      denom_13_15 = year_13_15 * !! sym(denominator),
-      denom_14_16 = year_14_16 * !! sym(denominator),
-      denom_15_17 = year_15_17 * !! sym(denominator),
-      denom_16_18 = year_16_18 * !! sym(denominator),
-      # !! sym(numerator) by year
-      num_07_09 = year_07_09 * !! sym(numerator),
-      num_08_10 = year_08_10 * !! sym(numerator),
-      num_09_11 = year_09_11 * !! sym(numerator),
-      num_10_12 = year_10_12 * !! sym(numerator),
-      num_11_13 = year_11_13 * !! sym(numerator),
-      num_12_14 = year_12_14 * !! sym(numerator),
-      num_13_15 = year_13_15 * !! sym(numerator),
-      num_14_16 = year_14_16 * !! sym(numerator),
-      num_15_17 = year_15_17 * !! sym(numerator),
-      num_16_18 = year_16_18 * !! sym(numerator)) %>%
-    select(sex, denom_07_09:num_16_18) 
-  
-  # Males only
-  male_ts <- kpi_ts %>%
-    filter(sex == 1) %>%
-    gather(key = "year", value = "n", -sex) %>%
-    group_by(year) %>%
-    summarise(n = sum(n)) %>%
-    mutate(KPI = KPI_no,
-           sex = "Males") %>%
-    ungroup() %>% 
-    separate(year, c("metric","year")) %>%
-    mutate(
-      year2 = as.character(
-        ifelse(as.numeric(year) + 2 == 9,
-               "09",
-               as.numeric(year) + 2
-        )),
-      report_yr = as.character(paste0("20", year,"/", year2))) %>%
-    spread(key = metric, value = n) %>% 
-    mutate(KPI_rate = num/denom*100) %>%
-    select(KPI, report_yr, sex, KPI_rate)
-  
-  
-  # Females only
-  female_ts <- kpi_ts %>%
-    filter(sex == 2) %>%
-    gather(key = "year", value = "n", -sex) %>%
-    group_by(year) %>%
-    summarise(n = sum(n)) %>%
-    mutate(KPI = KPI_no,
-           sex = "Females") %>%
-    ungroup() %>% 
-    separate(year, c("metric","year")) %>%
-    mutate(
-      year2 = as.character(
-        ifelse(as.numeric(year) + 2 == 9,
-               "09",
-               as.numeric(year) + 2
-        )),
-      report_yr = as.character(paste0("20", year,"/", year2))) %>%
-    spread(key = metric, value = n) %>% 
-    mutate(KPI_rate = num/denom*100) %>%
-    select(KPI, report_yr, sex, KPI_rate)
-  
-  # All persons
-  all_ts <- kpi_ts %>%
-    gather(key = "year", value = "n", -sex) %>%
-    group_by(year) %>%
-    summarise(n = sum(n)) %>%
-    mutate(KPI = KPI_no,
-           sex = "Persons") %>%
-    ungroup() %>% 
-    separate(year, c("metric","year")) %>%
-    mutate(
-      year2 = as.character(
-        ifelse(as.numeric(year) + 2 == 9,
-               "09",
-               as.numeric(year) + 2
-        )),
-      report_yr = as.character(paste0("20", year,"/", year2))) %>%
-    spread(key = metric, value = n) %>% 
-    mutate(KPI_rate = num/denom*100) %>%
-    select(KPI, report_yr, sex, KPI_rate)
-  
-  output <- bind_rows(male_ts, female_ts, all_ts)
-}
-
-
+# Calculate time-series KPIs using function
 uptake_ts <- ts_function("invite_n", "uptake_n", 1)
 positivity_ts <- ts_function("uptake_n", "positive_n", 3)
 cancer_ts <- ts_function("uptake_n", "cancer_n", 8)
@@ -178,29 +181,12 @@ ts_data <- bind_rows(uptake_ts, positivity_ts, cancer_ts, adenoma_ts,
                      cancer_ppv_ts, adenoma_ppv_ts)
 # Matches output from previous publication
 
+#SII/RII calculation moved to separate script
+
+# Save final output
 saveRDS(ts_data, paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
                         "TPP/KPIs/Code + DB/TPP/data/ts_data.rds"))
 
-# make consistent with functions in other scripts in terms of order, naming etc
-## GC HERE - next
-# SII/RII
 
-# KPI 2 - SII/RII
-simd <- analysis_db %>%
-  group_by(simd2016, age_group) %>%
-  summarise(invite_n = sum(invite_n),
-            uptake_n = sum(uptake_n)) %>%
-  mutate(uptake_p = uptake_n/invite_n)
 
-rii(data = analysis_db, 
-    health = uptake_n, 
-    population = invite_n, 
-    ses = simd2016, 
-    age = age_group)
 
-rii(data = health_data, 
-    health = bad, 
-    population = pop, 
-    ses = quintile, 
-    age = age)
-ethnicity == "all")
