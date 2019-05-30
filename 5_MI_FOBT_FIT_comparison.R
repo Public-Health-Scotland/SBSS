@@ -27,7 +27,6 @@
 
 
 ### Step 1: Housekeeping
-
 ## Load packages
 library(dplyr)
 library(readr)
@@ -38,10 +37,7 @@ library(lubridate)
 library(invgamma)
 library(here)
 library(tidyr)
-library("rlang", lib.loc="~/R/x86_64-redhat-linux-gnu-library/3.2")
-
-
-
+# library("rlang", lib.loc="~/R/x86_64-redhat-linux-gnu-library/3.2")
 
 ## Define functions
 ####################################
@@ -60,18 +56,13 @@ result_test <- KPI_fraction('test_type','positive_n','uptake_n',as.character('up
 # it works!!
 ###########################
 
-
 ## Set filepaths and import reporting period dates from Script 0
 # Define location of combined_extract_all and analsysis_dataset
 source(here::here("code", "0_housekeeping.R"))
 
 ### Step 2: Import data
 #Keep this code and delete below when 'here' works
-sbsp_analysis_db <- readRDS(analysis_db_path) %>%
-  clean_names()
-#analysis_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-#                           "TPP/KPIs/Code + DB/TPP/data/analysis_dataset.rds"))
-
+sbsp_analysis_db <- readRDS(analysis_db_path)
 
 ### Step 3: Get relevant records for the KPI report.
 # Open the analysis database.
@@ -80,61 +71,42 @@ sbsp_analysis_db <- readRDS(analysis_db_path) %>%
 # Select only participating individuals.
 
 sbsp_slimdb <- sbsp_analysis_db %>%
-  filter(invdate >= as.Date(date_first) & invdate <= as.Date(date_last)) %>%
   filter(optin == 0) %>%
   filter(hbr14 %in% 1:14) %>%
   filter(screres %in% c(1:18,21,22,24))
 dim(sbsp_slimdb)
 names(sbsp_slimdb)
 
-
 #Select report time period and comparison time period
 test_comp_db <- sbsp_slimdb %>% 
   mutate(
-    fobt_flag = ifelse((invdate >= as.Date("2016-11-20") & invdate <= as.Date("2017-04-20")),1,0),
-    fit_flag  = ifelse((invdate >= as.Date("2017-11-20") & invdate <= as.Date("2018-04-30")),1,0)) %>%
+    fobt_flag = ifelse((invdate >= as.Date("2016-11-20") & 
+                          invdate <= as.Date("2017-04-30")),1,0),
+    fit_flag  = ifelse((invdate >= as.Date("2017-11-20") & 
+                          invdate <= as.Date("2018-04-30")),1,0)) %>%
   filter(fobt_flag  == 1 | fit_flag == 1)
 
 test_comp_db$test_type <- 0
 test_comp_db <- test_comp_db %>% 
-  mutate(test_type = ifelse((fobt_flag == 1),1,ifelse(fit_flag == 1,2,0)))
-
-
-names(test_comp_db)
-dim(test_comp_db)
-# 823,203 rows here.
-# 849,287 in the SPSS syntax.
+  mutate(test_type = ifelse((fobt_flag == 1),1,ifelse(fit_flag == 1,2,0))) %>%
+  # GC TO DO - Need to think about whether it is still appropriate to exclude 
+  # those with no simd
+  filter(simd2016 %in% 1:5)
 
 #################################################
 #Calculate uptake
 
 #Uptake all
 uptake_all <- KPI_rate('test_type','uptake_n','invite_n','uptake_overall')
-#uptake_all <-  test_comp_db %>%
-#              group_by(test_type) %>%
-#              summarise(p = sum(uptake_n) / sum(invite_n) * 100) %>%
-#              ungroup()
 
 #By ParticipationHistory.
 uptake_hist <- KPI_rate('uptake_history','uptake_n','invite_n','uptake_hist')
-#uptake_hist <-  test_comp_db %>%
-#                group_by(test_type,uptake_history) %>%
-#                summarise(p = sum(uptake_n) / sum(invite_n) * 100) %>%
-#                ungroup()
 
 #By sex.
 uptake_sex <- KPI_rate('sex','uptake_n','invite_n','uptake_sex')
-#uptake_sex <-  test_comp_db %>%
-#                group_by(test_type,sex) %>%
-#                summarise(p = sum(uptake_n) / sum(invite_n) * 100) %>%
-#                ungroup()
 
 #By agegroup.
 uptake_age <- KPI_rate('age_group','uptake_n','invite_n','uptake_agegroup')
-#uptake_age <-  test_comp_db %>%
-#                group_by(test_type,age_group) %>%
-#                summarise(p = sum(uptake_n) / sum(invite_n) * 100) %>%
-#                ungroup()
 
 #By SIMD2016.
 uptake_simd <- test_comp_db %>%
