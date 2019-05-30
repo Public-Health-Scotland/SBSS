@@ -7,7 +7,7 @@
 # Written/run on R Studio Server
 # R version 3.2.3
 # This script creates the SII and RII outputs for publication
-# Transcribed from syntaxes 8, 9 and 10 os the SPSS process
+# Transcribed from syntaxes 8, 9 and 10 of the SPSS process
 ##########################################################
 
 ### Step 1 - housekeeping
@@ -18,10 +18,11 @@ library(purrr)
 # set filepaths and extract dates with script 0
 source(here::here("code", "0_housekeeping.R"))
 
-# Calculate correct SIMD for time period
+
 SIMD_data <- readRDS(analysis_db_path) %>%
   filter(optin == 0 &
            hbr14 %in% 1:14) %>%
+  # Calculate correct SIMD for time period
   mutate(
     simd = case_when(
       invdate >= as.Date("2007-05-01") & invdate <= as.Date("2009-12-31") 
@@ -86,29 +87,8 @@ SIMD_data <- readRDS(analysis_db_path) %>%
   select(sex, simd, denom_07_09:num_16_18)
 
 # Create function for each sex and simd combination by year
-# simd_1_male <-   SIMD_data %>%
-#   filter(simd %in% c(1) & 
-#            sex %in% c(1)) %>%
-#   gather(key = "year", value = "n", -sex, -simd) %>%
-#   group_by(year) %>%
-#   summarise(n = sum(n)) %>%
-#   mutate(sex = "Persons") %>%
-#   ungroup() %>% 
-#   separate(year, c("metric","year")) %>%
-#   mutate(
-#     year2 = as.character(
-#       ifelse(as.numeric(year) + 2 == 9,
-#              "09",
-#              as.numeric(year) + 2
-#       )),
-#     report_yr = as.character(paste0("20", year,"/", year2))) %>%
-#   spread(key = metric, value = n) %>% 
-#   mutate(KPI_rate = num/denom*100) %>%
-#   select(report_yr, sex, num, denom, KPI_rate)
-
-
-# Create function for each sex and simd combination by year
 uptake_simd <- function(simd_num, simd_val, sex_num, sex_char) {
+  
   simd_1_male <-   SIMD_data %>%
     filter(simd %in% simd_num & 
              sex %in% sex_num) %>%
@@ -132,13 +112,15 @@ uptake_simd <- function(simd_num, simd_val, sex_num, sex_char) {
 }
 
 # Create uptake tables for each sex, simd combination
+# GC TO DO - could probably do this more simply with cleverer use of grouping
+
 # Males
 simd_1_male <- uptake_simd(1, "1", 1, "Male")
 simd_2_male <- uptake_simd(2, "2", 1, "Male")
 simd_3_male <- uptake_simd(3, "3", 1, "Male")
 simd_4_male <- uptake_simd(4, "4", 1, "Male")
 simd_5_male <- uptake_simd(5, "5", 1, "Male")
-simd_total_male <- uptake_simd(c(1:5), "Total", 1, "Male")
+# simd_total_male <- uptake_simd(c(1:5), "Total", 1, "Male")
 simd_all_male <- bind_rows(simd_1_male, simd_2_male, simd_3_male, simd_4_male,
                            simd_5_male)
 # Females
@@ -147,17 +129,17 @@ simd_2_female <- uptake_simd(2, "2", 2, "Female")
 simd_3_female <- uptake_simd(3, "3", 2, "Female")
 simd_4_female <- uptake_simd(4, "4", 2, "Female")
 simd_5_female <- uptake_simd(5, "5", 2, "Female")
-simd_total_female <- uptake_simd(c(1:5), "Total", 2, "Female")
+# simd_total_female <- uptake_simd(c(1:5), "Total", 2, "Female")
 simd_all_female <- bind_rows(simd_1_female, simd_2_female, simd_3_female, 
                              simd_4_female, simd_5_female)
 
 # Total
-simd_1_total <- uptake_simd(1, "1", c(1:2), "Persons")
-simd_2_total <- uptake_simd(2, "2", c(1:2), "Persons")
-simd_3_total <- uptake_simd(3, "3", c(1:2), "Persons")
-simd_4_total <- uptake_simd(4, "4", c(1:2), "Persons")
-simd_5_total <- uptake_simd(5, "5", c(1:2), "Persons")
-simd_total_total <- uptake_simd(c(1:5), "Total", c(1:2), "Persons")
+simd_1_total <- uptake_simd(1, "1", c(1:2), "All Persons")
+simd_2_total <- uptake_simd(2, "2", c(1:2), "All Persons")
+simd_3_total <- uptake_simd(3, "3", c(1:2), "All Persons")
+simd_4_total <- uptake_simd(4, "4", c(1:2), "All Persons")
+simd_5_total <- uptake_simd(5, "5", c(1:2), "All Persons")
+# simd_total_total <- uptake_simd(c(1:5), "Total", c(1:2), "All Persons")
 
 simd_all_total <- bind_rows(simd_1_total, simd_2_total, simd_3_total, 
                             simd_4_total, simd_5_total)
@@ -168,76 +150,58 @@ simd_all <- bind_rows(simd_all_male, simd_all_female, simd_all_total)
 
 
 # SII/RII calculation for uptake
-# Copy method from https://github.com/ScotPHO/indicator-production
+# Copied SII method from https://github.com/ScotPHO/indicator-production
 
-#Splitting into two files: one with quintiles for SII and one without to keep the total values
+# Create file for modelling
 data_depr_sii <- simd_all %>%
   group_by(report_yr, sex) %>%
+  # Calculate overall uptake rate and total population
   mutate(overall_rate = sum(num)/sum(denom),
          total_pop = sum(denom)) %>%
-  mutate(proportion_pop = denom/total_pop) %>% # calculate the total population for each area (without SIMD).
+  # calculate the total population for each area (without SIMD)
+  mutate(proportion_pop = denom/total_pop) %>% 
   arrange(report_yr, sex) %>% 
-  #This first part is to adjust rate and denominator with the population weights
-  mutate(cumulative_pro = cumsum(proportion_pop),  # cumulative proportion population for each area
+  # This first part is to adjust rate and denominator with the population weights
+  # cumulative proportion population for each area
+  mutate(cumulative_pro = cumsum(proportion_pop),  
          relative_rank = case_when(
            simd == "1" ~ 0.5*proportion_pop,
            simd != "1" ~ lag(cumulative_pro) + 0.5*proportion_pop),
-         sqr_proportion_pop = sqrt(proportion_pop), #square root of the proportion of the population in each SIMD
+         # square root of the proportion of the population in each SIMD
+         sqr_proportion_pop = sqrt(proportion_pop), 
          relrank_sqr_proppop = relative_rank * sqr_proportion_pop,
-         rate_sqr_proppop = sqr_proportion_pop * KPI_rate) %>% #rate based on population weights
+         # rate based on population weights
+         rate_sqr_proppop = sqr_proportion_pop * KPI_rate) %>% 
   arrange(sex, report_yr, simd) 
 
-#creating one column called data with all the variables not in the grouping
+# Creating one column called data with all the variables not in the grouping
 # Calculating linear regression for all the groups, then formatting the results
-# and calculating the confidence intervals
 sii_model <- data_depr_sii %>% 
   nest() %>%
   mutate(model = map(data, ~lm(rate_sqr_proppop ~ sqr_proportion_pop 
                                + relrank_sqr_proppop + 0, 
                                data = .)),
          #extracting sii from model, a bit fiddly but it works
-         sii = -1 * as.numeric(map(map(model, "coefficients"), "relrank_sqr_proppop")))
+         sii = as.numeric(map(map(model, "coefficients"), 
+                              "relrank_sqr_proppop"))) %>%
+  select(report_yr, sex, sii)
 
+# Create table with overall uptake for calculating RII
+rii_sii <- simd_all %>%
+  group_by(report_yr, sex) %>%
+  summarise(overall_rate = sum(num)/sum(denom)*100) %>%
+  left_join(sii_model, c("report_yr", "sex")) %>%
+  # Having reviewed the SPSS code, RII was previously calulated using the
+  # simple mean of uptake for deciles 1:5. I believe the population-weighted
+  # mean is more appropriate so will generate slightly different answers
+  # to what was done previously
+  mutate(rii = sii/overall_rate) %>%
+  arrange(desc(sex), report_yr) %>%
+  gather("measure", "value", -report_yr, -sex, -overall_rate) %>%
+  select(measure, sex, report_yr, value) %>%
+  ungroup()
 
-# GC TO DO
-## tidy up - see if can reduce the masses of processing for the simd files
-## order sex the same as the publication
-## Relabel "Persons" as "All Persons"
-## save output file
+# Save file with RII/SII
+saveRDS(rii_sii, paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+                        "TPP/KPIs/Code + DB/TPP/data/rii_sii_data.rds"))
 
-
-
-
-
-
-
-
-
-
-
-
-
-cis = map(model, confint_tidy)) %>% #calculating confidence intervals
-  ungroup() 
-
-%>% unnest(cis) %>% #Unnesting the CIs 
-  #selecting only even row numbers which are the ones that have the sii cis
-  filter(row_number() %% 2 == 0) %>% 
-  mutate(lowci_sii = -1 * conf.high, #fixing interpretation
-         upci_sii = -1 * conf.low) %>% 
-  select(-conf.low, -conf.high) %>% 
-  mutate_at(c("sii", "lowci_sii", "upci_sii"), funs(replace(., is.na(.), NA_real_))) #recoding NAs
-
-#Merging sii with main data set
-data_depr <- left_join(data_depr_sii, sii_model, by = c("code", "year", "quint_type"))
-
-#Calculating RII
-data_depr <- data_depr %>% mutate(rii = sii / overall_rate,
-                                  lowci_rii = lowci_sii / overall_rate,
-                                  upci_rii = upci_sii / overall_rate,
-                                  #Transforming RII into %. This way is interpreted as "most deprived areas are
-                                  # xx% above the average" For example: Cancer mortality rate is around 55% higher 
-                                  # in deprived areas relative to the mean rate in the population
-                                  rii_int = rii * 0.5 *100,
-                                  lowci_rii_int = lowci_rii * 0.5 *100,
-                                  upci_rii_int = upci_rii * 0.5 *100)
