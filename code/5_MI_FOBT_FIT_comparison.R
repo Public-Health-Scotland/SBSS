@@ -24,8 +24,8 @@
 # Get relevant records for the KPI report.
 # Create variables required.
 # Calculate uptake and positivity.
-
-
+# GC TO DO - check the screening history calculation
+install.packages("DescTools")
 ### Step 1: Housekeeping
 ## Load packages
 library(dplyr)
@@ -42,18 +42,79 @@ library(tidyr)
 ## Define functions
 ####################################
 #Test
-KPI_rate <- function(gp, num, den, kpi_name) {
+KPI_rate <- function(num, den, kpi_name) {
   
   # KPI for all persons
-  test_comp_db %>%
-    group_by(test_type, !!sym(gp)) %>%
-    summarise(p = sum(!!sym(num)) / sum(!!sym(den)) * 100) %>%
+  KPI_all <- test_comp_db %>%
+    group_by(test_type) %>%
+    summarise(
+      regs_n = sum(!!sym(num)),
+      regs_d = sum(!!sym(den)),
+      p = sum(!!sym(num)) / sum(!!sym(den))) %>%
     ungroup() %>%
     mutate(group_label = kpi_name)
+  
+  # KPI for uptake history
+  KPI_hist <- test_comp_db %>%
+    group_by(test_type, uptake_history) %>%
+    summarise(
+      regs_n = sum(!!sym(num)),
+      regs_d = sum(!!sym(den)),
+      p = sum(!!sym(num)) / sum(!!sym(den))) %>%
+    ungroup() %>%
+    mutate(group_label = kpi_name)
+  
+  # KPI for sex
+  KPI_sex <- test_comp_db %>%
+    group_by(test_type, sex) %>%
+    summarise(
+      regs_n = sum(!!sym(num)),
+      regs_d = sum(!!sym(den)),
+      p = sum(!!sym(num)) / sum(!!sym(den))) %>%
+    ungroup() %>%
+    mutate(group_label = kpi_name)
+  
+  # KPI for age
+  KPI_age <- test_comp_db %>%
+    group_by(test_type, age_group) %>%
+    summarise(
+      regs_n = sum(!!sym(num)),
+      regs_d = sum(!!sym(den)),
+      p = sum(!!sym(num)) / sum(!!sym(den))) %>%
+    ungroup() %>%
+    mutate(group_label = kpi_name)
+  
+  #By SIMD2016.
+  KPI_simd <- test_comp_db %>%
+    group_by(test_type, simd2016) %>%
+    summarise(
+      regs_n = sum(!!sym(num)),
+      regs_d = sum(!!sym(den)),
+      p = sum(!!sym(num)) / sum(!!sym(den))) %>%
+    ungroup() %>%
+    filter(!is.na(simd2016)) %>%
+    mutate(group_label = kpi_name)
+  
+  test_comp_KPI <- bind_rows(
+    KPI_all,
+    KPI_hist,
+    KPI_sex,
+    KPI_age,
+    KPI_simd) %>% 
+    select(group_label, test_type, uptake_history, sex,age_group,
+           simd2016, regs_n, regs_d, p) %>%
+    # Calculate upper and lower 95% confidence intervals
+    mutate(
+      lower95CI = 
+        ((p + qchisq((1-0.05),df=1)/(2*regs_d) - qnorm(1-(0.05/2),mean=0,sd=1)
+          *sqrt((p*(1-p)+qchisq((1-0.05),df=1)/(4*regs_d))/regs_d))) / 
+        (1+qchisq((1-0.05),df=1)/regs_d),
+      upper95CI = ((p + qchisq((1-0.05),df=1)/(2*regs_d) + qnorm(1-(0.05/2),
+                                                                 mean=0,sd=1)
+                    *sqrt((p*(1-p)+qchisq((1-0.05),df=1)/(4*regs_d))/regs_d))) / 
+        (1+qchisq((1-0.05),df=1)/regs_d)   )
 }
 
-result_test <- KPI_fraction('test_type','positive_n','uptake_n',as.character('uptake_by_test'))
-# it works!!
 ###########################
 
 ## Set filepaths and import reporting period dates from Script 0
@@ -71,9 +132,14 @@ sbsp_analysis_db <- readRDS(analysis_db_path)
 # Select only participating individuals.
 
 sbsp_slimdb <- sbsp_analysis_db %>%
-  filter(optin == 0) %>%
-  filter(hbr14 %in% 1:14) %>%
-  filter(screres %in% c(1:18,21,22,24))
+  filter(optin == 0 &
+           hbr14 %in% 1:14 &
+           screres %in% c(1:18,21,22,24)) %>%
+  mutate(
+    canc_col_n = cancer_n * col_perf_n,
+    adenoma_col_n = adenoma_n * col_perf_n,
+    hr_adenoma_col_n = hr_adenoma_n * col_perf_n
+  )
 dim(sbsp_slimdb)
 names(sbsp_slimdb)
 
@@ -94,107 +160,35 @@ test_comp_db <- test_comp_db %>%
   filter(simd2016 %in% 1:5)
 
 #################################################
-#Calculate uptake
+#Calculate test comparison for each KPI 
 
 #Uptake all
-uptake_all <- KPI_rate('test_type','uptake_n','invite_n','uptake_overall')
+test_comp_uptake <- KPI_rate('uptake_n','invite_n','Uptake')
+#Positivity
+test_comp_positivity <- KPI_rate('positive_n','uptake_n','Positivity')
 
-#By ParticipationHistory.
-uptake_hist <- KPI_rate('uptake_history','uptake_n','invite_n','uptake_hist')
+# Cancer PPV
+# GC have run with cancer_n as a check and it matches what was done previously, 
+# however canc_col_n should be used as this is only cases of cancer where a 
+# colonoscopy has been performed
+test_comp_cancer_ppv <- KPI_rate('canc_col_n','col_perf_n','Cancer PPV')
 
-#By sex.
-uptake_sex <- KPI_rate('sex','uptake_n','invite_n','uptake_sex')
-
-#By agegroup.
-uptake_age <- KPI_rate('age_group','uptake_n','invite_n','uptake_agegroup')
-
-#By SIMD2016.
-uptake_simd <- test_comp_db %>%
-  group_by(test_type, simd2016) %>%
-  summarise(p = sum(uptake_n) / sum(invite_n) * 100) %>%
-  ungroup() %>%
-  filter(!is.na(simd2016)) %>%
-  mutate(group_label = 'uptake_agegroup')
-
-test_comp_uptake <- bind_rows(
-  uptake_all,
-  uptake_hist,
-  uptake_sex,
-  uptake_age,
-  uptake_simd) %>% 
-  select(group_label, test_type,sex,age_group,
-         simd2016,uptake_history,p)
-
-# Save output file
-write_excel_csv(test_comp_uptake, 
-                path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/Code + DB/TPP/data/test_comp_uptake.csv"))
-#saveRDS(test_comp_uptake, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-#                                "TPP/KPIs/Code + DB/TPP/data/test_comp_uptake.rds"))
-
-
-#################################################
-
-#Calculate Positivity.
-#Test script to see if we need to condition on colperf - doesn't look like it.
-#test_comp_db <- test_comp_db %>% 
-#                  mutate(t_positive_n = ifelse((colperf == '01'),positive_n,0))
-
-#positivity all
-positivity_all <- KPI_rate('test_type','positive_n','uptake_n','pos_overall')
-#positivity_all <-  test_comp_db %>%
-#                    group_by(test_type) %>%
-#                    summarise(p = sum(positive_n) / sum(uptake_n) * 100) %>%
-#                    ungroup()
-
-
-#By ParticipationHistory.
-positivity_hist <- KPI_rate('uptake_history','positive_n','uptake_n','pos_hist')
-#positivity_hist <- test_comp_db %>%
-#                    group_by(test_type,uptake_history) %>%
-#                    summarise(p = sum(positive_n) / sum(uptake_n) * 100) %>%
-#                    ungroup()
-
-#By sex.
-positivity_sex <- KPI_rate('sex','positive_n','uptake_n','pos_sex')
-#positivity_sex <-  test_comp_db %>%
-#                    group_by(test_type,sex) %>%
-#                    summarise(p = sum(positive_n) / sum(uptake_n) * 100) %>%
-#                    ungroup()
-
-#By agegroup.
-positivity_age <- KPI_rate('age_group','positive_n','uptake_n','pos_age')
-#positivity_age <-  test_comp_db %>%
-#                    group_by(test_type,age_group) %>%
-#                    summarise(p = sum(positive_n) / sum(uptake_n) * 100) %>%
-#                    ungroup()
-
-
-#By SIMD2016.
-positivity_simd <- test_comp_db %>%
-  group_by(test_type, simd2016) %>%
-  summarise(p = sum(positive_n) / sum(uptake_n) * 100) %>%
-  ungroup() %>%
-  filter(!is.na(simd2016)) %>%
-  mutate(group_label = 'pos_agegroup')
-
-test_comp_positivity <- bind_rows(
-  positivity_all,
-  positivity_hist,
-  positivity_sex,
-  positivity_age,
-  positivity_simd) %>%
-  select(group_label,test_type,sex,age_group,
-         simd2016,uptake_history,p)
-
-# Save output file
-write_excel_csv(test_comp_positivity, 
-                path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/Code + DB/TPP/data/test_comp_positivity.csv"))
-#saveRDS(test_comp_uptake, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-#                                "TPP/KPIs/Code + DB/TPP/data/test_comp_uptake.rds"))
-
+#Adenoma PPV - same comment applies as with cancer
+test_comp_adenoma_ppv <- KPI_rate('adenoma_n','col_perf_n','Adenoma PPV')
 
 ###################################################
-# Calculate confidence intervals for PPV stats
+# Calculate stats by haemoglobin concentration
+
+hbg <- test_comp_db %>%
+  mutate(hbg20 =
+           # Want to round down to nearest 20 for purposes of test threshold
+           # min part isn't working for some reason, though the parts work
+           # separately
+           min(
+             floor(haemoglobin/20) * 20,
+             200, na.rm = FALSE
+           )
+  )
 
 
 
