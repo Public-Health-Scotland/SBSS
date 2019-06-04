@@ -7,25 +7,21 @@
 # COmparison of KPIs between FOBT and qFIT data.
 # Written/run on R Studio server: and so uses //PHI_conf/
 # R version 3.5.1 
-# This script creates Confidence Interval data for funnel plots in Excel
+# This script creates FIT/FOBT comparison data outputs
 # Transcribed from SPSS script "FIT comparison KPIs.sps"
 # At: 
 #\\stats\CancerGroup1\Topics\BowelScreening\Publications\SBoSP-Statistics\20190205\Syntax
 ##########################################################
 
-### Purpose of this script
-
-### This script has two aims:
 
 ### Key outputs:
 
 ### Notes: 
-# Create Screening History file.
 # Get relevant records for the KPI report.
 # Create variables required.
 # Calculate uptake and positivity.
 # GC TO DO - check the screening history calculation
-install.packages("DescTools")
+
 ### Step 1: Housekeeping
 ## Load packages
 library(dplyr)
@@ -115,7 +111,6 @@ KPI_rate <- function(num, den, kpi_name) {
         (1+qchisq((1-0.05),df=1)/regs_d)   )
 }
 
-###########################
 
 ## Set filepaths and import reporting period dates from Script 0
 # Define location of combined_extract_all and analsysis_dataset
@@ -164,8 +159,17 @@ test_comp_db <- test_comp_db %>%
 
 #Uptake all
 test_comp_uptake <- KPI_rate('uptake_n','invite_n','Uptake')
+
+saveRDS(test_comp_uptake, paste0(
+  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+  "TPP/KPIs/Code + DB/TPP/data/test_comp_uptake.rds"))
+
 #Positivity
 test_comp_positivity <- KPI_rate('positive_n','uptake_n','Positivity')
+
+saveRDS(test_comp_positivity, paste0(
+  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+  "TPP/KPIs/Code + DB/TPP/data/test_comp_positivity.rds"))
 
 # Cancer PPV
 # GC have run with cancer_n as a check and it matches what was done previously, 
@@ -173,22 +177,58 @@ test_comp_positivity <- KPI_rate('positive_n','uptake_n','Positivity')
 # colonoscopy has been performed
 test_comp_cancer_ppv <- KPI_rate('canc_col_n','col_perf_n','Cancer PPV')
 
+saveRDS(test_comp_cancer_ppv, paste0(
+  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+  "TPP/KPIs/Code + DB/TPP/data/test_comp_cancer_ppv.rds"))
+
 #Adenoma PPV - same comment applies as with cancer
-test_comp_adenoma_ppv <- KPI_rate('adenoma_n','col_perf_n','Adenoma PPV')
+test_comp_adenoma_ppv <- KPI_rate('adenoma_col_n','col_perf_n','Adenoma PPV')
+
+saveRDS(test_comp_adenoma_ppv, paste0(
+  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+  "TPP/KPIs/Code + DB/TPP/data/test_comp_adenoma_ppv.rds"))
+
+# HR adenoma PPV - same comment applies as with cancer
+test_comp_hr_adenoma_ppv <- KPI_rate('hr_adenoma_col_n','col_perf_n',
+                                     'Adenoma PPV')
+
+saveRDS(test_comp_hr_adenoma_ppv, paste0(
+  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+  "TPP/KPIs/Code + DB/TPP/data/test_comp_hr_adenoma_ppv.rds"))
 
 ###################################################
 # Calculate stats by haemoglobin concentration
+## GC TO DO - deal with possible different cancer numbers detected by
+## colonoscopy/non-colonoscopy for PPV calculations
 
 hbg <- test_comp_db %>%
   mutate(hbg20 =
            # Want to round down to nearest 20 for purposes of test threshold
            # min part isn't working for some reason, though the parts work
            # separately
-           min(
-             floor(haemoglobin/20) * 20,
-             200, na.rm = FALSE
-           )
-  )
+           case_when(
+             test_type == 1 ~ "FOBT",
+             haemoglobin >= 200 ~ "200+",
+             haemoglobin < 80 ~ "<80",
+             haemoglobin >= 80 & haemoglobin < 200 
+             ~ as.character(floor(haemoglobin/20) * 20)),
+         hbg20 = forcats::fct_relevel(hbg20,
+                                      "<80","80","100","120","140","160","180","200+",
+                                      "FOBT")
+  ) %>%
+  group_by(hbg20) %>%
+  summarise(
+    number_screened = sum(uptake_n),
+    positive_tests = sum(positive_n),
+    colonoscopies_performed = sum(col_perf_n),
+    cancers_detected = sum(cancer_n),
+    hr_adenomas_detected = sum(hr_adenoma_n),
+    all_adenomas_detected = sum(adenoma_n)
+  ) %>% 
+  filter(!is.na(hbg20))
 
+hbg <- t(hbg)
 
-
+saveRDS(hbg, paste0(
+  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
+  "TPP/KPIs/Code + DB/TPP/data/hbg_info.rds"))
