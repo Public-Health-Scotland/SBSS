@@ -298,16 +298,16 @@ simd_dem <- analysis_db %>%
 # - local drive (to upload to github)
 
 saveRDS(KPI_data, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                                "TPP/KPIs/Code + DB/Data/KPI_data.rds")
+                                "TPP/KPIs/Code + DB/TPP/data/KPI_data.rds")
 )
 
 saveRDS(sex_dem, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                               "TPP/KPIs/Code + DB/Data/sex_dem.rds")
+                               "TPP/KPIs/Code + DB/TPP/data/sex_dem.rds")
 )
 saveRDS(age_dem, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                               "TPP/KPIs/Code + DB/Data/age_dem.rds")
+                               "TPP/KPIs/Code + DB/TPP/data/age_dem.rds")
 )
 
 saveRDS(simd_dem, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                                "TPP/KPIs/Code + DB/Data/simd_dem.rds")
+                                "TPP/KPIs/Code + DB/TPP/data/simd_dem.rds")
 )
