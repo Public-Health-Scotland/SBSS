@@ -1,3 +1,4 @@
+
 ##########################################################
 # Analysis_dataset_.R
 # Gavin Clark
@@ -61,10 +62,10 @@ flexi_sig <- read_sav(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
 slim_db <- left_join(slim_db, flexi_sig, by = "chinum") %>%
   mutate(remove = ifelse(FSRESULT == "01" & 
                            (invdate >= as.Date("2014-06-01") & invdate <= as.Date("2015-12-31")) &
-                           screres %in% c(1,3,4,5,6,7,8), 1, 0)) %>%
+                           !screres %in% c(1,3,4,5,6,7,8), 1, 0)) %>%
   filter(remove == 0|is.na(remove)) %>%
   select(-(FSPERF:remove))
-# 43 removed
+# 27 removed
 
 # Remove tables that are no longer needed
 rm(list = c("flexi_sig", "raw_db"))
@@ -272,7 +273,7 @@ slim_db <- mutate(slim_db,
                       uptake_rnd_5 == 0 ~ "Didn't participate in previous round"
                   ) ) 
 
-# # Check versus FIT/FOBT report
+## Check versus FIT/FOBT report
 # slim_db %>% 
 #   mutate(
 #     test = case_when(
