@@ -20,7 +20,6 @@ library(scales)
 # set filepaths and extract dates with script 0
 source(here::here("code", "0_housekeeping.R"))
 
-# Bring in database and filter
 analysis_db <-
   readRDS(analysis_db_path) %>%
   filter(optin == 0 &
@@ -31,15 +30,48 @@ analysis_db <-
   mutate(
     yearmon = as.yearmon(invdate)
     )
-
 # Summarise uptake by month
 uptake_by_month <- analysis_db %>%
   group_by(yearmon) %>%
-  summarise(uptake = sum(uptake_n)/sum(invite_n) * 100) 
+  summarise(uptake = sum(uptake_n)/sum(invite_n) * 100) %>%
+  ungroup() %>%
+  mutate(standard = 60) %>%
+  gather("type", "value", uptake:standard) %>%
+  mutate(type = forcats::fct_relevel(type, "uptake", "standard")) %>%
+  arrange(yearmon, type)
 
 # Create chart
-chart <- ggplot(data = uptake_by_month, aes(x = as.Date(yearmon), y = uptake)) +
-  geom_line(aes(linetype = "Uptake %")) +
+chart <- ggplot(data = uptake_by_month, 
+                 aes(x = as.Date(yearmon), 
+                     y = value)) +
+  geom_line(aes(linetype = type,
+                colour = type)) +
+  ylim(0,100) +
+  scale_x_date(labels = date_format("%b-%Y"), 
+               date_breaks = "6 months") +
+  xlab("Month of invitation") + 
+  ylab("Uptake %") +
+  ggtitle("Uptake by month from May 2015 to April 2018") +
+  scale_linetype_manual(values = c(1, 2),
+                        labels = c("Uptake %", "60% standard")) +
+  scale_colour_manual(values = c("black", "red"),
+                      labels = c("Uptake %", "60% standard")) + 
+  guides(guide_legend(reverse = TRUE)) + 
+  annotate("text", 
+           x = as.Date("2017-11-20"), 
+           y = 80, 
+           label = "FIT introduced") +
+  annotate("segment", 
+           x = as.Date("2017-11-20"), 
+           xend = as.Date("2017-11-20"), 
+           y = 75, 
+           yend = 65, 
+           colour = "black", 
+           size = 1, 
+           alpha = 0.6, 
+           arrow = arrow(angle = 20, 
+                         length = unit(0.11, "inches"),
+                         ends = "last")) +
   theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 11),
         panel.background = element_blank(),
         panel.grid.major = element_blank(),
@@ -51,27 +83,7 @@ chart <- ggplot(data = uptake_by_month, aes(x = as.Date(yearmon), y = uptake)) +
         axis.ticks = element_line(colour="grey"),
         legend.title = element_blank(),
         legend.key = element_blank(),
-        legend.position = c(0.3, 0.9),
-        legend.box = "horizontal") +
-  scale_x_date(labels = date_format("%b-%Y"), date_breaks = "6 months") +
-  ylim(0,100) +
-  xlab("Month of invitation") + 
-  # Create line to show 60% standard
-  geom_hline(aes(yintercept=60, color = "red"), 
-             linetype = "dashed") +
-  ylab("Uptake %") +
-  ggtitle("Uptake by month from May 2015 to April 2018") +
-  annotate("text", x = as.Date("2017-11-20"), y = 80, label = "FIT introduced") +
-  annotate("segment", x = as.Date("2017-11-20"), xend = as.Date("2017-11-20"), 
-           y = 75, yend = 65, colour = "black", 
-           size=1, alpha=0.6, 
-           arrow=arrow(angle = 20, 
-                       length = unit(0.11, "inches"),
-                       ends = "last")) + 
-  scale_colour_manual(labels = c("60% Standard"),
-                      values = c("red" = "red")) +
-  scale_linetype_manual(values = c("solid","dashed"), 
-                        guide = guide_legend(reverse = FALSE))
+        legend.position = "right")
 
 # Chart height decided by seeing what size of image would fit in word document
 # and using right-click size to get the image size. Default in word is cm,
@@ -104,7 +116,9 @@ This release by Information Services Division (ISD) provides an update of the Sc
 
 * 64% of people returned their test kit for FIT in the six months since the test was launched (Nov-17 to Apr-18). This is the first time the uptake has been better than the standard of 60%. This is in comparison to only 56% uptake for an earlier six month period for FOBT (Nov-16 to Apr-17).
 
-![Line graph showing uptake in the Scottish Bowel Screening Programme, against the 60% standard, over time.](chart1.png) \
+
+<Div custom-style = "centre_justified">
+![Line graph showing uptake in the Scottish Bowel Screening Programme, against the 60% standard, over time.](chart1.png) \ </div>
 
 
 * The FIT also had a higher percentage of patients with a positive result than the FOBT (3.2% vs 2.1%)
