@@ -33,7 +33,6 @@ library(lubridate)
 library(invgamma)
 library(here)
 library(tidyr)
-# library("rlang", lib.loc="~/R/x86_64-redhat-linux-gnu-library/3.2")
 
 ## Define functions
 ####################################
@@ -225,7 +224,8 @@ hbg <- test_comp_db %>%
     hr_adenomas_detected = sum(hr_adenoma_n),
     all_adenomas_detected = sum(adenoma_n)
   ) %>% 
-  filter(!is.na(hbg20))
+  ungroup() %>%
+  filter(!is.na(hbg20)) 
 
 hbg <- t(hbg)
 
