@@ -20,4 +20,3 @@ sbsdb_path <- (paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Data/",
 # Define location of analysis database (created in script 1)
 analysis_db_path <- (paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
                             "TPP/KPIs/Code + DB/TPP/data/analysis_dataset.rds"))
-
