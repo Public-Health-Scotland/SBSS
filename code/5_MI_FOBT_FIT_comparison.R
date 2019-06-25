@@ -1,7 +1,7 @@
 ##########################################################
 # 5_MI_FOBT_FIT_comparison.R
 # Thomas Godfrey
-# 29/05/2019
+# 25/06/2019
 # Script 5
 # Management Information:
 # COmparison of KPIs between FOBT and qFIT data.
