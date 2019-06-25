@@ -98,25 +98,31 @@ KPI_rate <- function(num, den, kpi_name) {
     KPI_simd) %>% 
     select(group_label, test_type, uptake_history, sex,age_group,
            simd2016, regs_n, regs_d, p) %>%
-    # Calculate upper and lower 95% confidence intervals
+  # Calculate upper and lower 95% confidence intervals
+    # To calculate confidence intervals, we use the Wilson score method.
+    # Currently we use a formula directly converted from the IBM-SPSS website.
+    # This implements the Wilson Score method for the 100(1â€“alpha)% confidence limits 
+    # for the proportion; where 'p' is a proportion (not a percentage representation), 
+    # 'alpha' is a significance level and 'n' is the denominator of the proportion 
+    # (e.g. total number of individuals in the sample/population). 		
+    # Reference: http://www-01.ibm.com/support/docview.wss?uid=swg21480513 
     mutate(
       lower95CI = 
         ((p + qchisq((1-0.05),df=1)/(2*regs_d) - qnorm(1-(0.05/2),mean=0,sd=1)
           *sqrt((p*(1-p)+qchisq((1-0.05),df=1)/(4*regs_d))/regs_d))) / 
         (1+qchisq((1-0.05),df=1)/regs_d),
-      upper95CI = ((p + qchisq((1-0.05),df=1)/(2*regs_d) + qnorm(1-(0.05/2),
-                                                                 mean=0,sd=1)
-                    *sqrt((p*(1-p)+qchisq((1-0.05),df=1)/(4*regs_d))/regs_d))) / 
-        (1+qchisq((1-0.05),df=1)/regs_d)   )
+      upper95CI = 
+        ((p + qchisq((1-0.05),df=1)/(2*regs_d) + qnorm(1-(0.05/2),mean=0,sd=1)
+          *sqrt((p*(1-p)+qchisq((1-0.05),df=1)/(4*regs_d))/regs_d))) / 
+        (1+qchisq((1-0.05),df=1)/regs_d) )
 }
 
 
 ## Set filepaths and import reporting period dates from Script 0
-# Define location of combined_extract_all and analsysis_dataset
+# Defines location of combined_extract_all and analsysis_dataset
 source(here::here("code", "0_housekeeping.R"))
 
 ### Step 2: Import data
-#Keep this code and delete below when 'here' works
 sbsp_analysis_db <- readRDS(analysis_db_path)
 
 ### Step 3: Get relevant records for the KPI report.
@@ -139,16 +145,10 @@ names(sbsp_slimdb)
 
 #Select report time period and comparison time period
 test_comp_db <- sbsp_slimdb %>% 
-  mutate(
-    fobt_flag = ifelse((invdate >= as.Date("2016-11-20") & 
-                          invdate <= as.Date("2017-04-30")),1,0),
-    fit_flag  = ifelse((invdate >= as.Date("2017-11-20") & 
-                          invdate <= as.Date("2018-04-30")),1,0)) %>%
-  filter(fobt_flag  == 1 | fit_flag == 1)
-
-test_comp_db$test_type <- 0
-test_comp_db <- test_comp_db %>% 
-  mutate(test_type = ifelse((fobt_flag == 1),1,ifelse(fit_flag == 1,2,0))) %>%
+  mutate(test_type = case_when(
+    (invdate >= as.Date("2016-11-20") & invdate <= as.Date("2017-04-30")) ~ 1,
+    (invdate >= as.Date("2017-11-20") & invdate <= as.Date("2018-04-30")) ~ 2)) %>%
+  filter(test_type ==1|test_type ==2) %>%
   # GC TO DO - Need to think about whether it is still appropriate to exclude 
   # those with no simd
   filter(simd2016 %in% 1:5)
@@ -226,8 +226,10 @@ hbg <- test_comp_db %>%
   ) %>% 
   ungroup() %>%
   filter(!is.na(hbg20)) 
+#Creates this warning but does the job: 
+#Factor `hbg20` contains implicit NA, consider using `forcats::fct_explicit_na` 
 
-hbg <- t(hbg)
+hbg <- as.data.frame(t(hbg))
 
 saveRDS(hbg, paste0(
   "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
