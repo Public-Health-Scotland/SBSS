@@ -1,3 +1,4 @@
+
 ##########################################################
 # markdown_report_charts.R
 # Gavin Clark
@@ -73,21 +74,21 @@ uptake_table <- bind_rows(hb_table, scotland_table) %>%
   left_join(hblist, by = "hbr14") %>%
   select(hb, sex, uptake_p, standard) %>%
   mutate(hb = forcats::fct_relevel(hb,'Ayrshire and Arran',
-                          'Borders',
-                          'Dumfries and Galloway',
-                          'Fife',
-                          'Forth Valley',
-                          'Grampian',
-                          'Greater Glasgow and Clyde',
-                          'Highland',
-                          'Lanarkshire',
-                          'Lothian',
-                          'Orkney',
-                          'Shetland',
-                          'Tayside',
-                          'Western Isles',
-                          'Scotland'))
-  #gather("type","value")
+                                   'Borders',
+                                   'Dumfries and Galloway',
+                                   'Fife',
+                                   'Forth Valley',
+                                   'Grampian',
+                                   'Greater Glasgow and Clyde',
+                                   'Highland',
+                                   'Lanarkshire',
+                                   'Lothian',
+                                   'Orkney',
+                                   'Shetland',
+                                   'Tayside',
+                                   'Western Isles',
+                                   'Scotland'))
+#gather("type","value")
 
 # Create chart
 uptake_hb_chart <- ggplot(data = uptake_table, aes(hb)) +
@@ -115,11 +116,9 @@ uptake_hb_chart <- ggplot(data = uptake_table, aes(hb)) +
         legend.title = element_blank(),
         legend.key = element_blank(),
         legend.position = "top")
-chart
-
 
 # Chart height decided by seeing what size of image would fit in word document
 # and using right-click size to get the image size. Default in word is cm,
 # ggsave takes inches (I'm sure there will be a conversion function in R?)
-ggsave(here::here("RMarkdown/charts","uptake_hb.png"), plot = uptake_hb_chart, device = "png", 
-       dpi = 300, width = 6.1653543, height  = 2.582677)
+ggsave(here::here("RMarkdown","uptake_hb.png"), plot = uptake_hb_chart, device = "png", 
+       dpi = 300, width = 6.88, height  = 4.22)
