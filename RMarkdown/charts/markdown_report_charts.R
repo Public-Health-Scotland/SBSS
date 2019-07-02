@@ -1,4 +1,3 @@
-
 ##########################################################
 # markdown_report_charts.R
 # Gavin Clark
@@ -64,6 +63,7 @@ scotland_table <- hb_table %>%
     invite_n = sum(invite_n),
     uptake_n = sum(uptake_n)
   ) %>% 
+  ungroup() %>%
   mutate(hbr14 = 15)
 
 # Add Scotland to hb table
@@ -92,29 +92,38 @@ uptake_table <- bind_rows(hb_table, scotland_table) %>%
 
 # Create chart
 uptake_hb_chart <- ggplot(data = uptake_table, aes(hb)) +
-  geom_bar(aes(y = uptake_p, group = sex, fill = sex), 
-           stat= "identity", position = "dodge") +
-  geom_line(aes(y = standard, group = 1, colour = "red")) + 
+  geom_bar(aes(y = uptake_p, 
+               group = sex, 
+               fill = sex), 
+           stat = "identity", 
+           position = "dodge") +
+  geom_hline(aes(yintercept = 60, 
+                 group = 1, 
+                 colour = "red"),
+             size = 1.1) +
   xlab("Health board of residence") + 
   ylab("Uptake %") +
-  scale_fill_manual(values = c( "1"="navyblue", "2"="cornflowerblue"),
+  scale_fill_manual(values = c("1" = "navyblue", 
+                               "2" = "cornflowerblue"),
                     labels = c("Male", "Female")) +
-  # scale_linetype_manual(values = c(red),
-  #                       labels = c("60% standard")) +
   scale_colour_manual(values = c("red"),
                       labels = c("60% standard")) +
   guides(guide_legend(reverse = TRUE)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) + 
   theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 11),
         panel.background = element_blank(),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"),
         axis.text.y = element_text(face = "bold"),
-        axis.title.y = element_text(margin = margin(0,10,0,0)),
-        axis.line = element_line(colour="grey"),
-        axis.ticks = element_line(colour="grey"),
+        axis.title.y = element_text(margin = margin(0, 10, 0, 0)),
+        axis.line = element_line(colour = "grey"),
+        axis.ticks = element_line(colour = "grey"),
         legend.title = element_blank(),
         legend.key = element_blank(),
+        legend.spacing.x = unit(0.2, "cm"),
+        legend.key.height = unit(0.1, "cm"),
+        legend.key.width = unit(0.8, "cm"),
         legend.position = "top")
 
 # Chart height decided by seeing what size of image would fit in word document
