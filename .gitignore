@@ -8,6 +8,8 @@
 *.[tT][xX][tT]
 
 # Excel files #
+*.xls
+*.xlsx
 *.[xX][lL][sS][xXmMtT]?
 
 # SPSS formats #
