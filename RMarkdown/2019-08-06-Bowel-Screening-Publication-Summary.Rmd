@@ -97,6 +97,11 @@ contact1 <- c("**Gavin Clark**", "Senior Information Analyst", "0131 275 7420", 
 contact2 <- c("**Thomas Godfrey**", "Information Analyst", "0131 275 6692", "thomas.godfrey@nhs.net")
 
 contact <- data.frame(contact1, contact2)
+
+library(dplyr)
+uptake <- readRDS(here::here("Temp", "test_comp_uptake.rds"))
+
+x <- uptake %>% slice(2) %>% pull(p) %>% scales::percent(accuracy = 1)
 ```
 
 # Scottish Bowel Screening Programme 
@@ -114,7 +119,7 @@ This release by Information Services Division (ISD) provides an update of the Sc
 
 ### Main Points
 
-* 64% of people returned their test kit for FIT in the six months since the test was launched (Nov-17 to Apr-18). This is the first time the uptake has been better than the standard of 60%. This is in comparison to only 56% uptake for an earlier six month period for FOBT (Nov-16 to Apr-17).
+* `r x` of people returned their test kit for FIT in the six months since the test was launched (Nov-17 to Apr-18). This is the first time the uptake has been better than the standard of 60%. This is in comparison to only 56% uptake for an earlier six month period for FOBT (Nov-16 to Apr-17).
 
 
 <Div custom-style = "centre_justified">
