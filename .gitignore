@@ -22,3 +22,7 @@
 # Temp and Output folders #
 Temp/
 Output/
+
+# Output documents #
+**/*-Bowel-Screening-Publication-Summary.docx
+**/*-Bowel-Screening-Publication-Report.docx
