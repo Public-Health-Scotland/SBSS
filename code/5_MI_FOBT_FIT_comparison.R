@@ -21,7 +21,7 @@
 # Create variables required.
 # Calculate uptake and positivity.
 # GC TO DO - check the screening history calculation
-
+start <- Sys.time()
 ### Step 1: Housekeeping
 ## Load packages
 library(dplyr)
@@ -146,12 +146,18 @@ names(sbsp_slimdb)
 #Select report time period and comparison time period
 test_comp_db <- sbsp_slimdb %>% 
   mutate(test_type = case_when(
-    (invdate >= as.Date("2016-11-20") & invdate <= as.Date("2017-04-30")) ~ 1,
-    (invdate >= as.Date("2017-11-20") & invdate <= as.Date("2018-04-30")) ~ 2)) %>%
-  filter(test_type ==1|test_type ==2) %>%
+    (invdate >= as.Date("2016-11-20") & invdate <= as.Date("2017-10-31")) ~ 1,
+    (invdate >= as.Date("2017-11-20") & invdate <= as.Date("2018-10-31")) ~ 2),
+    uptake_history = forcats::fct_relevel(uptake_history,
+                                          "First round",
+                                          "Participated in previous round",
+                                          "Didn't participate in previous round",
+                                          "Never participated")) %>%
+  filter(test_type ==1|test_type ==2) #%>%
   # GC TO DO - Need to think about whether it is still appropriate to exclude 
   # those with no simd
-  filter(simd2016 %in% 1:5)
+  #filter(simd2016 %in% 1:5)
+# 1,779,452 - same in SPSS
 
 #################################################
 #Calculate test comparison for each KPI 
@@ -159,16 +165,12 @@ test_comp_db <- sbsp_slimdb %>%
 #Uptake all
 test_comp_uptake <- KPI_rate('uptake_n','invite_n','Uptake')
 
-saveRDS(test_comp_uptake, paste0(
-  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-  "TPP/KPIs/Code + DB/TPP/data/test_comp_uptake.rds"))
+saveRDS(test_comp_uptake, file = here::here("Temp", "test_comp_uptake.rds"))
 
 #Positivity
 test_comp_positivity <- KPI_rate('positive_n','uptake_n','Positivity')
 
-saveRDS(test_comp_positivity, paste0(
-  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-  "TPP/KPIs/Code + DB/TPP/data/test_comp_positivity.rds"))
+saveRDS(test_comp_positivity, file = here::here("Temp", "test_comp_positivity.rds"))
 
 # Cancer PPV
 # GC have run with cancer_n as a check and it matches what was done previously, 
@@ -176,24 +178,29 @@ saveRDS(test_comp_positivity, paste0(
 # colonoscopy has been performed
 test_comp_cancer_ppv <- KPI_rate('canc_col_n','col_perf_n','Cancer PPV')
 
-saveRDS(test_comp_cancer_ppv, paste0(
-  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-  "TPP/KPIs/Code + DB/TPP/data/test_comp_cancer_ppv.rds"))
+saveRDS(test_comp_cancer_ppv, file = here::here("Temp", "test_comp_cancer_ppv.rds"))
 
 #Adenoma PPV - same comment applies as with cancer
 test_comp_adenoma_ppv <- KPI_rate('adenoma_col_n','col_perf_n','Adenoma PPV')
 
-saveRDS(test_comp_adenoma_ppv, paste0(
-  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-  "TPP/KPIs/Code + DB/TPP/data/test_comp_adenoma_ppv.rds"))
+saveRDS(test_comp_adenoma_ppv, file = here::here("Temp", "test_comp_adenoma_ppv.rds"))
 
 # HR adenoma PPV - same comment applies as with cancer
 test_comp_hr_adenoma_ppv <- KPI_rate('hr_adenoma_col_n','col_perf_n',
                                      'Adenoma PPV')
 
-saveRDS(test_comp_hr_adenoma_ppv, paste0(
-  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-  "TPP/KPIs/Code + DB/TPP/data/test_comp_hr_adenoma_ppv.rds"))
+saveRDS(test_comp_hr_adenoma_ppv, file = here::here("Temp", "test_comp_hr_adenoma_ppv.rds"))
+
+# Cancer detection
+test_comp_cancer_det <- KPI_rate('cancer_n','uptake_n','Cancer detection')
+
+saveRDS(test_comp_cancer_det, file = here::here("Temp", "test_comp_cancer_det.rds"))
+
+# Adenoma detection
+test_comp_adenoma_det <- KPI_rate('adenoma_n','uptake_n','Adenoma detection')
+
+saveRDS(test_comp_adenoma_det, file = here::here("Temp", "test_comp_adenoma_det.rds"))
+
 
 ###################################################
 # Calculate stats by haemoglobin concentration
@@ -220,9 +227,9 @@ hbg <- test_comp_db %>%
     number_screened = sum(uptake_n),
     positive_tests = sum(positive_n),
     colonoscopies_performed = sum(col_perf_n),
-    cancers_detected = sum(cancer_n),
-    hr_adenomas_detected = sum(hr_adenoma_n),
-    all_adenomas_detected = sum(adenoma_n)
+    cancers_detected = sum(canc_col_n),
+    hr_adenomas_detected = sum(hr_adenoma_col_n),
+    all_adenomas_detected = sum(adenoma_col_n)
   ) %>% 
   ungroup() %>%
   filter(!is.na(hbg20)) 
@@ -231,6 +238,21 @@ hbg <- test_comp_db %>%
 
 hbg <- as.data.frame(t(hbg))
 
-saveRDS(hbg, paste0(
-  "/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-  "TPP/KPIs/Code + DB/TPP/data/hbg_info.rds"))
+saveRDS(hbg, file = here::here("Temp", "hbg.rds"))
+
+
+###############################################################################
+# Check numbers detected with no colonoscopy performed for cover sheet
+
+check <- test_comp_db %>%
+  group_by(test_type) %>%
+  summarise(cancer_n = sum(cancer_n),
+            canc_col_n = sum(canc_col_n),
+            canc_diff = cancer_n - canc_col_n,
+            adenoma_n = sum(adenoma_n),
+            adenoma_col_n = sum(adenoma_col_n),
+            adenoma_diff = adenoma_n - adenoma_col_n,
+            hr_adenoma_n = sum(hr_adenoma_n),
+            hr_adenoma_col_n = sum(hr_adenoma_col_n),
+            hr_adenoma_diff = hr_adenoma_n - hr_adenoma_col_n)
+end <- Sys.time()

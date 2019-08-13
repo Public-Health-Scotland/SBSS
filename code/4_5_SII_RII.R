@@ -32,35 +32,35 @@ SIMD_data <- readRDS(analysis_db_path) %>%
       invdate >= as.Date("2014-01-01")  ~ as.numeric(simd2016)
     ),
     # variables for participation year
-    year_07_09 = ifelse(invdate >= as.Date("2007-05-01") &
-                          invdate <= as.Date("2009-04-30"),
+    year_07_09 = ifelse(invdate >= as.Date("2007-11-01") &
+                          invdate <= as.Date("2009-10-31"),
                         1, 0),
-    year_08_10 = ifelse(invdate >= as.Date("2008-05-01") &
-                          invdate <= as.Date("2010-04-30"),
+    year_08_10 = ifelse(invdate >= as.Date("2008-11-01") &
+                          invdate <= as.Date("2010-10-31"),
                         1, 0),
-    year_09_11 = ifelse(invdate >= as.Date("2009-05-01") &
-                          invdate <= as.Date("2011-04-30"),
+    year_09_11 = ifelse(invdate >= as.Date("2009-11-01") &
+                          invdate <= as.Date("2011-10-31"),
                         1, 0),
-    year_10_12 = ifelse(invdate >= as.Date("2010-05-01") &
-                          invdate <= as.Date("2012-04-30"),
+    year_10_12 = ifelse(invdate >= as.Date("2010-11-01") &
+                          invdate <= as.Date("2012-10-31"),
                         1, 0),
-    year_11_13 = ifelse(invdate >= as.Date("2011-05-01") &
-                          invdate <= as.Date("2013-04-30"),
+    year_11_13 = ifelse(invdate >= as.Date("2011-11-01") &
+                          invdate <= as.Date("2013-10-31"),
                         1, 0),
-    year_12_14 = ifelse(invdate >= as.Date("2012-05-01") &
-                          invdate <= as.Date("2014-04-30"),
+    year_12_14 = ifelse(invdate >= as.Date("2012-11-01") &
+                          invdate <= as.Date("2014-10-31"),
                         1, 0),
-    year_13_15 = ifelse(invdate >= as.Date("2013-05-01") &
-                          invdate <= as.Date("2015-04-30"),
+    year_13_15 = ifelse(invdate >= as.Date("2013-11-01") &
+                          invdate <= as.Date("2015-10-31"),
                         1, 0),
-    year_14_16 = ifelse(invdate >= as.Date("2014-05-01") &
-                          invdate <= as.Date("2016-04-30"),
+    year_14_16 = ifelse(invdate >= as.Date("2014-11-01") &
+                          invdate <= as.Date("2016-10-31"),
                         1, 0),
-    year_15_17 = ifelse(invdate >= as.Date("2015-05-01") &
-                          invdate <= as.Date("2017-04-30"),
+    year_15_17 = ifelse(invdate >= as.Date("2015-11-01") &
+                          invdate <= as.Date("2017-10-31"),
                         1, 0),
-    year_16_18 = ifelse(invdate >= as.Date("2016-05-01") &
-                          invdate <= as.Date("2018-04-30"),
+    year_16_18 = ifelse(invdate >= as.Date("2016-11-01") &
+                          invdate <= as.Date("2018-10-31"),
                         1, 0),
     # Denominator by year
     denom_07_09 = year_07_09 * invite_n,
@@ -202,6 +202,8 @@ rii_sii <- simd_all %>%
   ungroup()
 
 # Save file with RII/SII
-saveRDS(rii_sii, paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                        "TPP/KPIs/Code + DB/TPP/data/rii_sii_data.rds"))
+saveRDS(rii_sii, 
+        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Publications/",
+                      "SBoSP-Statistics/20190806/Temp/",
+               "rii_sii_data.rds"))
 

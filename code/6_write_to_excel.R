@@ -91,7 +91,8 @@ writeWorksheet(wb, age_dem,"A2-Population by age and HB",
                startRow = 5, startCol = 3, header = FALSE)
 
 # simd demography
-simd_dem <- readRDS(here("Temp", "simd_dem.rds"))
+simd_dem <- readRDS(here("Temp", "simd_dem.rds")) %>%
+  mutate(hbr14 = as.numeric(hbr14))
 
 # Need to include the health board names as part of this one, quick fix here
 ## GC TO DO - move to script 2
@@ -118,6 +119,9 @@ simd_dem <- left_join(hblist, simd_dem, by = "hbr14") %>%
 
 writeWorksheet(wb, simd_dem,"A3-Popn. by deprivation and HB",
                startRow = 5, startCol = 2, header = FALSE)
+# Need to update excel sheet for SIMD so that HBs are in correct
+# order
+# GC TO DO - automate this
 
 saveWorkbook(wb)
 
@@ -165,17 +169,17 @@ writeWorksheet(wb, hbg,"Comparison - volumes",
 # HR adenoma data
 # Get into format 
 hr_adenoma_ppv_p <- readRDS(here("Temp", 
-                                 "test_comp_hr_adenoma_ppv.rds")) %>%
+                                         "test_comp_hr_adenoma_ppv.rds")) %>%
   slice(1:2) %>%
   select(test_type, p) %>%
   spread(test_type, p) %>%
   rename(
     pFOBT = 1,
     pFIT = 2
-  )
+    )
 
 hr_adenoma_ppv_lower <- readRDS(here("Temp", 
-                                     "test_comp_hr_adenoma_ppv.rds")) %>%
+                                 "test_comp_hr_adenoma_ppv.rds")) %>%
   slice(1:2) %>%
   select(test_type, lower95CI) %>%
   spread(test_type, lower95CI) %>%
@@ -185,7 +189,7 @@ hr_adenoma_ppv_lower <- readRDS(here("Temp",
   )
 
 hr_adenoma_ppv_upper <- readRDS(here("Temp", 
-                                     "test_comp_hr_adenoma_ppv.rds")) %>%
+                                 "test_comp_hr_adenoma_ppv.rds")) %>%
   slice(1:2) %>%
   select(test_type, upper95CI) %>%
   spread(test_type, upper95CI)%>%
@@ -194,16 +198,23 @@ hr_adenoma_ppv_upper <- readRDS(here("Temp",
     UpperCIFIT = 2
   )
 
-hr_Adenoma_ppv <- bind_cols(hr_adenoma_ppv_p, hr_adenoma_ppv_lower, 
-                            hr_adenoma_ppv_upper)
+hr_adenoma_ppv <- bind_cols(hr_adenoma_ppv_p, hr_adenoma_ppv_lower, 
+                            hr_adenoma_ppv_upper) %>%
+  mutate(
+    lower_diff_fobt = pFOBT - LowerCIFOBT,
+    lower_diff_fit = pFIT - LowerCIFIT,
+    upper_diff_fobt = UpperCIFOBT - pFOBT,
+    upper_diff_fit = UpperCIFIT - pFIT
+  ) %>%
+  select(-(LowerCIFOBT:UpperCIFIT))
 
-writeWorksheet(wb, hr_Adenoma_ppv,"Summary", 
+writeWorksheet(wb, hr_adenoma_ppv,"Summary", 
                startRow = 74, startCol = 3, header = FALSE)
 
 saveWorkbook(wb)
 
 # Note - check that cells have updated in excel, press ctrl + shift + alt + F9
-# to ensure this
+# to ensure this, currently need to change some cells from text to numeric too
 
 # GC TO DO - update Nov 2018 etc. in the hidden tabs, may be best for this to be
 # manual so that some visual checking is carried out

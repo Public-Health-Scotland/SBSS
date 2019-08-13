@@ -1,7 +1,7 @@
 ##########################################################
 # 2_KPIs_HB_sex.R
 # Gavin Clark
-# 01/04/2019
+# 28/06/2019
 # Script 2 of ?
 # Data preparation for export
 # Written/run on R Studio Server
@@ -18,6 +18,9 @@
 library(dplyr)
 library(tidyr)
 library(readxl)
+library(here)
+library(haven)
+library(janitor)
 
 #   set filepaths and extract dates with script 0
 source(here::here("code", "0_housekeeping.R"))
@@ -149,7 +152,9 @@ analysis_db <- filter(analysis_db,
                                              ">8 weeks",
                                              "No colonoscopy"))
 
-# 1,844,815 - same as SPSS
+# 1,844,815 - same as SPSS - Nov18 upload
+# 1,866,332 - May19 upload 
+
 # Next step in SPSS is flexi-sig removal, this has been done in R script 1
 
 ### Step 3 -  Summarise variables into appropriate KPIs
@@ -216,8 +221,13 @@ KPI_4 <-
                  "waiting_time",
                  "col_perf_n",
                  4) %>% arrange(sex)
-KPI_9_15 <- KPI_proportion("dukes_der", "", "dukes_der", "cancer_n", 9)
-KPI_26_28 <- KPI_proportion("icd", "", "icd", "cancer_n", 26)
+KPI_9_15 <- KPI_proportion("dukes_der", "", "dukes_der", "cancer_n", 9) %>%
+  mutate(KPI = c(9,9,9,10,10,10,11,11,11,12,12,12,13,13,13,14,14,14))
+# GC TO DO, automate this all so that it can be merged with skeleton/
+# have the correct number of rows
+KPI_26_28 <- KPI_proportion("icd", "", "icd", "cancer_n", 26) %>%
+  filter(icd %in% c("C18","C19","C20")) %>%
+  mutate( KPI = c(26,26,26,27,27,27,28,28,28))
 
 # Pull together basic, 2-year KPI data
 KPI_data <- bind_rows(
@@ -242,18 +252,22 @@ KPI_data <- bind_rows(
   KPI_26_28
 )
 
-# # Check this against excel
-# check <- KPI_data %>%
-#   ungroup() %>%
-#   filter(KPI != 9) %>%
-#   select(3:17)
-# 
-# ## Bring in excel for checking
-# excel_check <- read_xlsx(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-#            "TPP/KPIs/Code + DB/Data/Comparison file for script 2.xlsx")) %>%
-#   slice(-43:-66)
-# 
-# comparison <- round(excel_check - check, 4)
+skeleton <- read_sav(here("Temp", "skeleton1_(v02)_data_SUMTABS.sav")) %>%
+  clean_names() %>%
+  filter(kpi %in% c(1:28), !kpi %in% c(15:16), index1 == 3) %>%
+  mutate(waiting_time =
+    case_when(
+    time_ref == 1 ~ "0 to 4 weeks",
+    time_ref == 2 ~ "4 to 8 weeks",
+    time_ref == 3 ~ ">8 weeks")) %>%
+  select(kpi, sex, simd2016, waiting_time)
+
+KPI_data_full <- left_join(skeleton, KPI_data, 
+                           by = c("kpi" = "KPI", 
+                                  "sex", 
+                                  "simd2016" = "simd2016",
+                                  "waiting_time"))
+
 # TO DO - Complications with no colonoscopies performed.Add to QA process in SPSS
 # TO DO - Script 1 - cancers detected with no colonoscopy performed, 
 # add to QA in SPSS
@@ -297,17 +311,11 @@ simd_dem <- analysis_db %>%
 # - stats network (to load/save PII files)
 # - local drive (to upload to github)
 
-saveRDS(KPI_data, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                                "TPP/KPIs/Code + DB/TPP/data/KPI_data.rds")
-)
+saveRDS(KPI_data, file = here("Temp", "KPI_data.rds"))
 
-saveRDS(sex_dem, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                               "TPP/KPIs/Code + DB/TPP/data/sex_dem.rds")
-)
-saveRDS(age_dem, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                               "TPP/KPIs/Code + DB/TPP/data/age_dem.rds")
-)
+saveRDS(sex_dem, file = here("Temp", "sex_dem.rds"))
 
-saveRDS(simd_dem, file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                                "TPP/KPIs/Code + DB/TPP/data/simd_dem.rds")
-)
+saveRDS(age_dem, file = here("Temp", "age_dem.rds"))
+
+saveRDS(simd_dem, file = here("Temp", "simd_dem.rds"))
+

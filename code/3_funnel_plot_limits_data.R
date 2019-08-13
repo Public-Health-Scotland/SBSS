@@ -137,9 +137,9 @@ denom_n_hb <- slim_db %>%
 
 # Save output file
 saveRDS(denom_n_hb, 
-        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/",
-                      "Code + DB/TPP/data/Funnel-data_HB-denominators.rds"))
-
+        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Publications/",
+                      "SBoSP-Statistics/20190806/Temp/",
+                      "Funnel-data_HB-denominators.rds"))
 
 ## Step 3: Calculate Wilson Score confidence intervals.
 
@@ -171,7 +171,8 @@ funnel_limits_skeleton <- crossing(KPI,sex,n)
 #Note: could alternatively recalculate estimates on-the-fly & label with KPI no. & sex.
 
 Scotland_KPIs_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                                   "TPP/KPIs/Code + DB/TPP/data/KPI_data.rds"))
+"Publications/SBoSP-Statistics/20190806/Temp//KPI_data.rds"))
+
 dim(Scotland_KPIs_db)
 names(Scotland_KPIs_db)
 
@@ -197,7 +198,6 @@ conf_limits.db$upper95 <- Wilson_upperCI(conf_limits.db$p, alpha=0.05, conf_limi
 # Calculate 99%CIs
 conf_limits.db$lower99 <- Wilson_lowerCI(conf_limits.db$p, alpha=0.01, conf_limits.db$n)
 conf_limits.db$upper99 <- Wilson_upperCI(conf_limits.db$p, alpha=0.01, conf_limits.db$n)
-
 
 #Convert CLs into %
 conf_limits.db$lower95 <- conf_limits.db$lower95 * 100
@@ -251,6 +251,6 @@ conf_limits_output <-  select(conf_limits_output,
 #                path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/",
 #                              "Code + DB/TPP/data/Funnel-data_Confidence-limits.csv"))
 saveRDS(conf_limits_output, 
-        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/",
-                      "Code + DB/TPP/data/Funnel-data_Confidence-limits.rds"))
-
+        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Publications/",
+                      "SBoSP-Statistics/20190806/Temp/",
+                      "Funnel-data_Confidence-limits.rds"))

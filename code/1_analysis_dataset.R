@@ -2,7 +2,7 @@
 ##########################################################
 # Analysis_dataset_.R
 # Gavin Clark
-# 11/03/2019
+# 28/06/2019
 # Data extraction/preparation
 # Written/run on R Studio Server
 # R version 3.2.3
@@ -48,7 +48,7 @@ slim_db <- raw_db %>% select(
   clean_names()
 
 ## glimpse() shows that date fields are being correctly read in
-## Test?
+## 8,988,877 records, same as SPSS
 
 ### Remove flexi. sig. study participants
 flexi_sig <- read_sav(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
@@ -65,7 +65,7 @@ slim_db <- left_join(slim_db, flexi_sig, by = "chinum") %>%
                            !screres %in% c(1,3,4,5,6,7,8), 1, 0)) %>%
   filter(remove == 0|is.na(remove)) %>%
   select(-(FSPERF:remove))
-# 27 removed
+# 27 removed, 8,988,850 remain
 
 # Remove tables that are no longer needed
 rm(list = c("flexi_sig", "raw_db"))
@@ -174,8 +174,9 @@ slim_db <- slim_db %>%
                                   dukes %in% c("03A","03B") ~ "C",
                                   dukes == "02" ~ "B",
                                   dukes == "01" ~ "A",
-                                  dukes %in% c("96","99") ~ "Not known",
-                                  TRUE ~ "Not known"),
+                                  dukes == "99" ~ "Not known",
+                                  dukes == "96" ~ "Not supplied",
+                                  TRUE ~ "Not supplied"),
                                 "")
                   ),
                   ""
@@ -183,12 +184,22 @@ slim_db <- slim_db %>%
   )
 
 # Test - monitor % of each dukes stage/numbers over time
-# stage_chart <- slim_db %>%
-#   filter(cancer_n == 1) %>%
-#   mutate(year = year(screresdat))
-# g <- ggplot(data = stage_chart, aes(x = year, fill = dukes_der)) +
-#   geom_bar(position = "dodge")
-# g
+stage_chart <- slim_db %>%
+  filter(cancer_n == 1) %>%
+  mutate(year = year(screresdat))
+g <- ggplot(data = stage_chart, aes(x = year, fill = dukes_der)) +
+  geom_bar(position = "dodge")
+g
+
+# Quick look at hbg concentration and dukes stage
+# FIT <- filter(stage_chart, !is.na(haemoglobin))
+# h <- ggplot(data = filter(stage_chart, 
+#                           !is.na(haemoglobin)), 
+#                           aes(x = dukes_der, y = haemoglobin)) + 
+#               geom_boxplot()
+# h
+
+# shows jump in dukes A, D and unknown in 2018
 
 ## Calculate screening participation history
 # Create variable for latest round of screening available
@@ -285,6 +296,9 @@ slim_db <- mutate(slim_db,
 #   group_by(test, uptake_history) %>%
 #   summarize(invite_n = sum(invite_n),
 #             uptake_p = sum(uptake_n)/sum(invite_n))
+
+# Are there any people who have fit positive with no haemoglobin?
+check <- slim_db %>% filter(screres == 22 & !is.na(haemoglobin))
 
 #### Percentages in line with SPSS, counts are slightly out (low hundreds)
 # Need to pick up those with blank date round 1 with IT

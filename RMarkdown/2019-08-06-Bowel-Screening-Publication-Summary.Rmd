@@ -9,87 +9,87 @@ output:
 # Center chart on output (currently a manual step, though not a major one)
 # Reorder legend
 # Possibly stretch out or center contact details
-
-# Create chart in ggplot
-library(dplyr)
-library(tidyr)
-library(zoo)
-library(ggplot2)
-library(scales)
-
-# set filepaths and extract dates with script 0
-source(here::here("code", "0_housekeeping.R"))
-
-analysis_db <-
-  readRDS(analysis_db_path) %>%
-  filter(optin == 0 &
-           hbr14 %in% 1:14 &
-           invdate >= as.Date("2015-05-01") & 
-           invdate <= as.Date("2018-04-30")) %>%
-  select(invdate, invite_n, uptake_n) %>%
-  mutate(
-    yearmon = as.yearmon(invdate)
-    )
-# Summarise uptake by month
-uptake_by_month <- analysis_db %>%
-  group_by(yearmon) %>%
-  summarise(uptake = sum(uptake_n)/sum(invite_n) * 100) %>%
-  ungroup() %>%
-  mutate(standard = 60) %>%
-  gather("type", "value", uptake:standard) %>%
-  mutate(type = forcats::fct_relevel(type, "uptake", "standard")) %>%
-  arrange(yearmon, type)
-
-# Create chart
-chart <- ggplot(data = uptake_by_month, 
-                 aes(x = as.Date(yearmon), 
-                     y = value)) +
-  geom_line(aes(linetype = type,
-                colour = type)) +
-  ylim(0,100) +
-  scale_x_date(labels = date_format("%b-%Y"), 
-               date_breaks = "6 months") +
-  xlab("Month of invitation") + 
-  ylab("Uptake %") +
-  ggtitle("Uptake by month from May 2015 to April 2018") +
-  scale_linetype_manual(values = c(1, 2),
-                        labels = c("Uptake %", "60% standard")) +
-  scale_colour_manual(values = c("black", "red"),
-                      labels = c("Uptake %", "60% standard")) + 
-  guides(guide_legend(reverse = TRUE)) + 
-  annotate("text", 
-           x = as.Date("2017-11-20"), 
-           y = 80, 
-           label = "FIT introduced") +
-  annotate("segment", 
-           x = as.Date("2017-11-20"), 
-           xend = as.Date("2017-11-20"), 
-           y = 75, 
-           yend = 65, 
-           colour = "black", 
-           size = 1, 
-           alpha = 0.6, 
-           arrow = arrow(angle = 20, 
-                         length = unit(0.11, "inches"),
-                         ends = "last")) +
-  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 11),
-        panel.background = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text.x = element_text(angle = 0, face = "bold"),
-        axis.text.y = element_text(face = "bold"),
-        axis.title.y = element_text(margin = margin(0,10,0,0)),
-        axis.line = element_line(colour="grey"),
-        axis.ticks = element_line(colour="grey"),
-        legend.title = element_blank(),
-        legend.key = element_blank(),
-        legend.position = "right")
-
-# Chart height decided by seeing what size of image would fit in word document
-# and using right-click size to get the image size. Default in word is cm,
-# ggsave takes inches (I'm sure there will be a conversion function in R?)
-ggsave("chart1.png", plot = chart, device = "png", 
-       dpi = 300, width = 6.1653543, height  = 2.582677)
+# 
+# # Create chart in ggplot
+# library(dplyr)
+# library(tidyr)
+# library(zoo)
+# library(ggplot2)
+# library(scales)
+# 
+# # set filepaths and extract dates with script 0
+# source(here::here("code", "0_housekeeping.R"))
+# 
+# analysis_db <-
+#   readRDS(analysis_db_path) %>%
+#   filter(optin == 0 &
+#            hbr14 %in% 1:14 &
+#            invdate >= as.Date("2015-05-01") & 
+#            invdate <= as.Date("2018-04-30")) %>%
+#   select(invdate, invite_n, uptake_n) %>%
+#   mutate(
+#     yearmon = as.yearmon(invdate)
+#     )
+# # Summarise uptake by month
+# uptake_by_month <- analysis_db %>%
+#   group_by(yearmon) %>%
+#   summarise(uptake = sum(uptake_n)/sum(invite_n) * 100) %>%
+#   ungroup() %>%
+#   mutate(standard = 60) %>%
+#   gather("type", "value", uptake:standard) %>%
+#   mutate(type = forcats::fct_relevel(type, "uptake", "standard")) %>%
+#   arrange(yearmon, type)
+# 
+# # Create chart
+# chart <- ggplot(data = uptake_by_month, 
+#                  aes(x = as.Date(yearmon), 
+#                      y = value)) +
+#   geom_line(aes(linetype = type,
+#                 colour = type)) +
+#   ylim(0,100) +
+#   scale_x_date(labels = date_format("%b-%Y"), 
+#                date_breaks = "6 months") +
+#   xlab("Month of invitation") + 
+#   ylab("Uptake %") +
+#   ggtitle("Uptake by month from May 2015 to April 2018") +
+#   scale_linetype_manual(values = c(1, 2),
+#                         labels = c("Uptake %", "60% standard")) +
+#   scale_colour_manual(values = c("black", "red"),
+#                       labels = c("Uptake %", "60% standard")) + 
+#   guides(guide_legend(reverse = TRUE)) + 
+#   annotate("text", 
+#            x = as.Date("2017-11-20"), 
+#            y = 80, 
+#            label = "FIT introduced") +
+#   annotate("segment", 
+#            x = as.Date("2017-11-20"), 
+#            xend = as.Date("2017-11-20"), 
+#            y = 75, 
+#            yend = 65, 
+#            colour = "black", 
+#            size = 1, 
+#            alpha = 0.6, 
+#            arrow = arrow(angle = 20, 
+#                          length = unit(0.11, "inches"),
+#                          ends = "last")) +
+#   theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 11),
+#         panel.background = element_blank(),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         axis.text.x = element_text(angle = 0, face = "bold"),
+#         axis.text.y = element_text(face = "bold"),
+#         axis.title.y = element_text(margin = margin(0,10,0,0)),
+#         axis.line = element_line(colour="grey"),
+#         axis.ticks = element_line(colour="grey"),
+#         legend.title = element_blank(),
+#         legend.key = element_blank(),
+#         legend.position = "right")
+# 
+# # Chart height decided by seeing what size of image would fit in word document
+# # and using right-click size to get the image size. Default in word is cm,
+# # ggsave takes inches (I'm sure there will be a conversion function in R?)
+# ggsave("chart1.png", plot = chart, device = "png", 
+#        dpi = 300, width = 6.1653543, height  = 2.582677)
 
 
 #Create contact information
