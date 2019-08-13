@@ -18,3 +18,11 @@
 # R data files #
 *.[rR][dD][aA][tT][aA]
 *.[rR][dD][sS]
+
+# Temp and Output folders #
+Temp/
+Output/
+
+# Output documents #
+**/*-Bowel-Screening-Publication-Summary.docx
+**/*-Bowel-Screening-Publication-Report.docx
