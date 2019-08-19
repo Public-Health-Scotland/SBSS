@@ -27,6 +27,9 @@ source(here::here("code", "0_housekeeping.R"))
 analysis_db <-
   readRDS(analysis_db_path)
 
+
+
+
 ### File for male and female combined ----
 ## GC TO DO - create function for male/female/all
 # Filter on dates
@@ -45,7 +48,7 @@ analysis_db <- filter(analysis_db,
     hr_adenoma_col_n = hr_adenoma_n * col_perf_n,
     canc_hr_n = cancer_n * col_perf_n + hr_adenoma_n * col_perf_n,
     all_neoplasia_n = cancer_n * col_perf_n + adenoma_n * col_perf_n,
-    negative_n = if_else(uptake_n == 1 & positive_n == 1, 1, 0),
+    negative_n = ifelse(screres %in% c(1,4,7,21), 1, 0),
     # Colonoscopy complication excluding "other"
     col_complic_o_n = if_else(complicp == 98, 0, col_complic_n),
     # Death due to colonoscopy complications
@@ -101,7 +104,6 @@ summary_one <- analysis_db %>%
     invite_n = sum(invite_n),
     positive_n = sum(positive_n),
     negative_n = sum(negative_n),
-    # Check that positives + negatives = number uptake
     uptake_n = sum(uptake_n),
     col_perf_n = sum(col_perf_n),
     col_complete_n = sum(col_complete_n),
@@ -126,9 +128,7 @@ summary_one <- analysis_db %>%
 summary_simd_invite <- analysis_db %>%
   group_by(simd2016, hbr14) %>%
   summarise(
-    invite_n = sum(invite_n),
-    uptake_n = sum(uptake_n)
-  ) %>%
+    invite_n = sum(invite_n)) %>%
   ungroup() %>%
   filter(!is.na(simd2016)) %>%
   mutate(simd2016 = recode(as.character(simd2016),
@@ -215,6 +215,7 @@ summary_dukes <- analysis_db %>%
   select(hbr14, dukes_a:dukes_ns) %>%
   distinct()
 
+
 summary_wt <- analysis_db %>%
   group_by(waiting_time, hbr14) %>%
   summarise(
@@ -262,6 +263,7 @@ summary_wt <- analysis_db %>%
   select(hbr14, wt_0_2:wt_over_20) %>%
   distinct()
 
+
 summary_icd <- analysis_db %>%
   mutate(
     icd = if_else(icd == "", "99", as.character(icd))
@@ -289,6 +291,7 @@ summary_icd <- analysis_db %>%
   select(hbr14, icd_c18:icd_nk) %>%
   distinct()
 
+
 summary_total_invite <- summary_simd_invite %>%
   mutate(simd_total_invite = 
            simd_1_invite +
@@ -298,6 +301,7 @@ summary_total_invite <- summary_simd_invite %>%
            simd_5_invite) %>%
   select(hbr14, simd_total_invite)
 
+
 summary_total_uptake <- summary_simd_uptake %>%
   mutate(simd_total_uptake = 
            simd_1_uptake +
@@ -306,6 +310,8 @@ summary_total_uptake <- summary_simd_uptake %>%
            simd_4_uptake +
            simd_5_uptake) %>%
   select(hbr14, simd_total_uptake)
+
+
 
 summary_all <- left_join(
   summary_one,
@@ -371,9 +377,14 @@ rm(analysis_db, summary_dukes, summary_icd, summary_one, summary_simd_invite,
         summary_simd_uptake, summary_total_invite, summary_total_uptake, summary_wt)
 
 
+
+
+
+
 # Bring in analysis database from script 1
 analysis_db <-
   readRDS(analysis_db_path)
+
 
 ### File for males only ----
 # Filter on dates
@@ -393,7 +404,7 @@ analysis_db <- filter(analysis_db,
     hr_adenoma_col_n = hr_adenoma_n * col_perf_n,
     canc_hr_n = cancer_n * col_perf_n + hr_adenoma_n * col_perf_n,
     all_neoplasia_n = cancer_n * col_perf_n + adenoma_n * col_perf_n,
-    negative_n = if_else(uptake_n == 1 & positive_n == 1, 1, 0),
+    negative_n = ifelse(screres %in% c(1,4,7,21), 1, 0),
     # Colonoscopy complication excluding "other"
     col_complic_o_n = if_else(complicp == 98, 0, col_complic_n),
     # Death due to colonoscopy complications
@@ -449,7 +460,6 @@ summary_one <- analysis_db %>%
     invite_n = sum(invite_n),
     positive_n = sum(positive_n),
     negative_n = sum(negative_n),
-    # Check that positives + negatives = number uptake
     uptake_n = sum(uptake_n),
     col_perf_n = sum(col_perf_n),
     col_complete_n = sum(col_complete_n),
@@ -474,9 +484,7 @@ summary_one <- analysis_db %>%
 summary_simd_invite <- analysis_db %>%
   group_by(simd2016, hbr14) %>%
   summarise(
-    invite_n = sum(invite_n),
-    uptake_n = sum(uptake_n)
-  ) %>%
+    invite_n = sum(invite_n)) %>%
   ungroup() %>%
   filter(!is.na(simd2016)) %>%
   mutate(simd2016 = recode(as.character(simd2016),
@@ -530,6 +538,7 @@ summary_simd_uptake <- analysis_db %>%
   select(hbr14, simd_1_uptake:simd_5_uptake) %>%
   distinct()
 
+
 # dukes
 summary_dukes <- analysis_db %>%
   group_by(dukes_der, hbr14) %>%
@@ -562,6 +571,7 @@ summary_dukes <- analysis_db %>%
          dukes_ns = max(dukes_ns)) %>%
   select(hbr14, dukes_a:dukes_ns) %>%
   distinct()
+
 
 summary_wt <- analysis_db %>%
   group_by(waiting_time, hbr14) %>%
@@ -610,6 +620,7 @@ summary_wt <- analysis_db %>%
   select(hbr14, wt_0_2:wt_over_20) %>%
   distinct()
 
+
 summary_icd <- analysis_db %>%
   mutate(
     icd = if_else(icd == "", "99", as.character(icd))
@@ -637,6 +648,7 @@ summary_icd <- analysis_db %>%
   select(hbr14, icd_c18:icd_nk) %>%
   distinct()
 
+
 summary_total_invite <- summary_simd_invite %>%
   mutate(simd_total_invite = 
            simd_1_invite +
@@ -646,6 +658,7 @@ summary_total_invite <- summary_simd_invite %>%
            simd_5_invite) %>%
   select(hbr14, simd_total_invite)
 
+
 summary_total_uptake <- summary_simd_uptake %>%
   mutate(simd_total_uptake = 
            simd_1_uptake +
@@ -654,6 +667,7 @@ summary_total_uptake <- summary_simd_uptake %>%
            simd_4_uptake +
            simd_5_uptake) %>%
   select(hbr14, simd_total_uptake)
+
 
 summary_male <- left_join(
   summary_one,
@@ -719,9 +733,14 @@ rm(analysis_db, summary_dukes, summary_icd, summary_one, summary_simd_invite,
    summary_simd_uptake, summary_total_invite, summary_total_uptake, summary_wt)
 
 
+
+
+
+
 # Bring in analysis database from script 1
 analysis_db <-
   readRDS(analysis_db_path)
+
 
 ### File for females only ----
 # Filter on dates
@@ -741,7 +760,7 @@ analysis_db <- filter(analysis_db,
     hr_adenoma_col_n = hr_adenoma_n * col_perf_n,
     canc_hr_n = cancer_n * col_perf_n + hr_adenoma_n * col_perf_n,
     all_neoplasia_n = cancer_n * col_perf_n + adenoma_n * col_perf_n,
-    negative_n = if_else(uptake_n == 1 & positive_n == 1, 1, 0),
+    negative_n = ifelse(screres %in% c(1,4,7,21), 1, 0),
     # Colonoscopy complication excluding "other"
     col_complic_o_n = if_else(complicp == 98, 0, col_complic_n),
     # Death due to colonoscopy complications
@@ -797,7 +816,6 @@ summary_one <- analysis_db %>%
     invite_n = sum(invite_n),
     positive_n = sum(positive_n),
     negative_n = sum(negative_n),
-    # Check that positives + negatives = number uptake
     uptake_n = sum(uptake_n),
     col_perf_n = sum(col_perf_n),
     col_complete_n = sum(col_complete_n),
@@ -822,9 +840,7 @@ summary_one <- analysis_db %>%
 summary_simd_invite <- analysis_db %>%
   group_by(simd2016, hbr14) %>%
   summarise(
-    invite_n = sum(invite_n),
-    uptake_n = sum(uptake_n)
-  ) %>%
+    invite_n = sum(invite_n)) %>%
   ungroup() %>%
   filter(!is.na(simd2016)) %>%
   mutate(simd2016 = recode(as.character(simd2016),
@@ -848,6 +864,7 @@ summary_simd_invite <- analysis_db %>%
   ungroup() %>%
   select(hbr14, simd_1_invite:simd_5_invite) %>%
   distinct()
+
 
 # Uptake numbers by SIMD and HB
 summary_simd_uptake <- analysis_db %>%
@@ -877,6 +894,7 @@ summary_simd_uptake <- analysis_db %>%
          simd_5_uptake = max(simd_5)) %>%
   select(hbr14, simd_1_uptake:simd_5_uptake) %>%
   distinct()
+
 
 # dukes
 summary_dukes <- analysis_db %>%
@@ -910,6 +928,7 @@ summary_dukes <- analysis_db %>%
          dukes_ns = max(dukes_ns)) %>%
   select(hbr14, dukes_a:dukes_ns) %>%
   distinct()
+
 
 summary_wt <- analysis_db %>%
   group_by(waiting_time, hbr14) %>%
@@ -958,6 +977,7 @@ summary_wt <- analysis_db %>%
   select(hbr14, wt_0_2:wt_over_20) %>%
   distinct()
 
+
 summary_icd <- analysis_db %>%
   mutate(
     icd = if_else(icd == "", "99", as.character(icd))
@@ -985,6 +1005,7 @@ summary_icd <- analysis_db %>%
   select(hbr14, icd_c18:icd_nk) %>%
   distinct()
 
+
 summary_total_invite <- summary_simd_invite %>%
   mutate(simd_total_invite = 
            simd_1_invite +
@@ -994,6 +1015,7 @@ summary_total_invite <- summary_simd_invite %>%
            simd_5_invite) %>%
   select(hbr14, simd_total_invite)
 
+
 summary_total_uptake <- summary_simd_uptake %>%
   mutate(simd_total_uptake = 
            simd_1_uptake +
@@ -1002,6 +1024,7 @@ summary_total_uptake <- summary_simd_uptake %>%
            simd_4_uptake +
            simd_5_uptake) %>%
   select(hbr14, simd_total_uptake)
+
 
 summary_female <- left_join(
   summary_one,
@@ -1065,6 +1088,10 @@ summary_female <- left_join(
 
 rm(analysis_db, summary_dukes, summary_icd, summary_one, summary_simd_invite,
    summary_simd_uptake, summary_total_invite, summary_total_uptake, summary_wt)
+
+
+
+
 
 ### Create individual files ---
 ## GC TO DO - function for this
@@ -1371,6 +1398,8 @@ female <- filter(summary_female, hbr14 == 14) %>%
   rename(female = value)
 
 w_i <- bind_cols(male, female, all)
+
+
 
 ### Write to excel ---
 ## GC TO DO - create function for this part also
