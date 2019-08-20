@@ -37,6 +37,8 @@ A number of files and folders will be created or need to be created every time t
 - **README.md**: This document.
 
 ## Running the publication
+
+### Updating the code
 To update the publication each quarter, the analyst responsible for updating the scripts/running the publication should complete the following steps:
 
 - Pull the most recent version of the master branch into their own folder
@@ -47,3 +49,16 @@ To update the publication each quarter, the analyst responsible for updating the
 - Create pull request for other analyst(s) to review changes
 - Once changes have been approved, merge the branch into the master branch and delete the branch
 - If no more changes are required, pull the updated master branch into the copy of the repository in the _Master_ folder
+
+### Running the code
+
+- In the _Master_ folder, run scripts 1:7
+- Check for any errors in the code and investigate if necessary
+- Check the files created in the _Temp_ sub-folder look as they should along the way
+- Check the contents of the _Output_ sub-folder look as they should
+
+Once this is done, the raw data files and Excel tables for the publication have been produced. The final step is knitting the RMarkdown documents:
+
+- In the _RMarkdown_ sub-folder inside the _Master_ folder, open both `.Rmd` scripts and click _Knit_
+- Check output
+- A couple of manual steps are required to finish off the markdown documents (adding cover page, table of contents and formatting tables correctly). They are outlined in the README of the [National Statistics Publication Templates repository](https://github.com/NHS-NSS-transforming-publications/National-Stats-Template).
