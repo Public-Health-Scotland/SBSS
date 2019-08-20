@@ -59,6 +59,8 @@ To update the publication each quarter, the analyst responsible for updating the
 
 Once this is done, the raw data files and Excel tables for the publication have been produced. The final step is knitting the RMarkdown documents:
 
-- In the _RMarkdown_ sub-folder inside the _Master_ folder, open both `.Rmd` scripts and click _Knit_
+- In the _RMarkdown_ sub-folder inside the _Master_ folder, run the `markdown_report_charts.R` and `markdown_tables.R` scripts
+- Check the output of both
+- Open both `.Rmd` scripts and click _Knit_
 - Check output
 - A couple of manual steps are required to finish off the markdown documents (adding cover page, table of contents and formatting tables correctly). They are outlined in the README of the [National Statistics Publication Templates repository](https://github.com/NHS-NSS-transforming-publications/National-Stats-Template).
