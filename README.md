@@ -11,7 +11,7 @@ A new folder should be created in CancerGroup1 for each iteration of this public
 - A folder named after each analyst who has worked on the publication e.g. a folder called _Tom_
 
 ### The _Master_ folder
-The _Master_ folder is the _master copy_ of the publication repository. This is the production-ready version that is used for the publication process each quarter. Once cloned, two folders should be created inside the _Master_ folder; one named _Output_ and one named _Temp_. Aside from creating those folders, the master copy should **never be edited** and should only be updated from approved changes pulled from GitHub.
+The _Master_ folder is the _master copy_ of the publication repository. This is the production-ready version that is used for the publication process each time the publication is run. Once cloned, two folders should be created inside the _Master_ folder; one named _Output_ and one named _Temp_. Aside from creating those folders, the master copy should **never be edited** and should only be updated from approved changes pulled from GitHub.
 
 ### The individual analyst folders
 These folders also contain up-to-date copies of the repository and these are the versions to which edits are made. Analysts should only work in their own folders on their own development branches. Once cloned, the _Output_ and _Temp_ sub-folders should be created as they were in the _Master_ folder. Once an analyst is content that their changes are ready for the master branch, they must create a pull request on GitHub and have the other analyst(s) from the team review their changes and, if satisfied, merge them back into the master branch. **It is then that the master folder is updated**.
