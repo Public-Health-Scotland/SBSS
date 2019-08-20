@@ -1203,7 +1203,7 @@ female <- filter(summary_female, hbr14 == 5) %>%
 f_v <- bind_cols(male, female, all)
 
 
-## GGC
+## Grampian
 all <- filter(summary_all, hbr14 == 6) %>%
   gather() %>%
   filter(key != "hbr14") %>%
@@ -1222,10 +1222,10 @@ female <- filter(summary_female, hbr14 == 6) %>%
   select(value) %>%
   rename(female = value)
 
-ggc <- bind_cols(male, female, all)
+grampian <- bind_cols(male, female, all)
 
 
-## Grampian
+## GGC
 all <- filter(summary_all, hbr14 == 7) %>%
   gather() %>%
   filter(key != "hbr14") %>%
@@ -1244,7 +1244,7 @@ female <- filter(summary_female, hbr14 == 7) %>%
   select(value) %>%
   rename(female = value)
 
-grampian <- bind_cols(male, female, all)
+ggc <- bind_cols(male, female, all)
 
 
 ## Highland
@@ -1460,6 +1460,17 @@ writeWorksheet(wb, f_v,"May-19",
 
 saveWorkbook(wb)
 
+# Grampian
+wb <- loadWorkbook(here("Output/CONFI-individual-HB-reports",
+                        "Grampian_KPI_May_2019.xls"))
+
+setStyleAction(wb, XLC$"STYLE_ACTION.NONE")
+
+writeWorksheet(wb, grampian,"May-19",
+               startRow = 44, startCol = 6, header = FALSE)
+
+saveWorkbook(wb)
+
 # GGC
 wb <- loadWorkbook(here("Output/CONFI-individual-HB-reports",
                         "GGC_KPI_May_2019.xls"))
@@ -1471,16 +1482,6 @@ writeWorksheet(wb, ggc,"May-19",
 
 saveWorkbook(wb)
 
-# Grampian
-wb <- loadWorkbook(here("Output/CONFI-individual-HB-reports",
-                        "Grampian_KPI_May_2019.xls"))
-
-setStyleAction(wb, XLC$"STYLE_ACTION.NONE")
-
-writeWorksheet(wb, grampian,"May-19",
-               startRow = 44, startCol = 6, header = FALSE)
-
-saveWorkbook(wb)
 
 # Highland
 wb <- loadWorkbook(here("Output/CONFI-individual-HB-reports",
