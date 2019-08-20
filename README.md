@@ -35,3 +35,15 @@ A number of files and folders will be created or need to be created every time t
 - **.gitignore**: Any files and folders that should not be tracked by git should be added to this file.
 - **SBSS.Rproj**: The project file for this repository. Wherever this file is saved is where RStudio automatically sets the working directory.
 - **README.md**: This document.
+
+## Running the publication
+To update the publication each quarter, the analyst responsible for updating the scripts/running the publication should complete the following steps:
+
+- Pull the most recent version of the master branch into their own folder
+- Create a fresh branch to make necessary changes
+- Update the dates in the `0_housekeeping.R` file
+- Ensure the filepaths in the `0_housekeeping.R` and `1_analysis_dataset.R` are correct.
+- Push new branch to GitHub
+- Create pull request for other analyst(s) to review changes
+- Once changes have been approved, merge the branch into the master branch and delete the branch
+- If no more changes are required, pull the updated master branch into the copy of the repository in the _Master_ folder
