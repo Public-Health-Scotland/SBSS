@@ -21,6 +21,7 @@ library(readxl)
 library(here)
 library(haven)
 library(janitor)
+library(tidylog)
 
 #   set filepaths and extract dates with script 0
 source(here::here("code", "0_housekeeping.R"))
@@ -130,30 +131,10 @@ analysis_db <- filter(analysis_db,
                               as.Date(date_first),
                               as.Date(date_last)) &
                         optin == 0 &
-                        hbr14 %in% 1:14) %>%
-  ## Define additional variables
-  # KPI 21, 22 24 and 25 require variables to be created
-  # TO DO, maybe - include these as part of script 1?
-  mutate(
-    canc_col_n = cancer_n * col_perf_n,
-    adenoma_col_n = adenoma_n * col_perf_n,
-    hr_adenoma_col_n = hr_adenoma_n * col_perf_n,
-    canc_hr_n = cancer_n * col_perf_n + hr_adenoma_n * col_perf_n,
-    all_neoplasia_n = cancer_n * col_perf_n + adenoma_n * col_perf_n,
-    icd = substr(icd10, 1, 3)) %>%
-  ## Order levels of waiting_times for output
-  ## Noticed that there are 3 NA values, these are all colonoscopies on the 
-  ## same day as screening result date, update script 1
-  ## TO DO - move to script 1
-  replace_na(list(waiting_time = "No colonoscopy")) %>%
-  mutate(waiting_time = forcats::fct_relevel(waiting_time,
-                                             "0 to 4 weeks",
-                                             "4 to 8 weeks",
-                                             ">8 weeks",
-                                             "No colonoscopy"))
-
+                        hbr14 %in% 1:14)
 # 1,844,815 - same as SPSS - Nov18 upload
 # 1,866,332 - May19 upload 
+
 
 # Next step in SPSS is flexi-sig removal, this has been done in R script 1
 
@@ -256,10 +237,10 @@ skeleton <- read_sav(here("Temp", "skeleton1_(v02)_data_SUMTABS.sav")) %>%
   clean_names() %>%
   filter(kpi %in% c(1:28), !kpi %in% c(15:16), index1 == 3) %>%
   mutate(waiting_time =
-    case_when(
-    time_ref == 1 ~ "0 to 4 weeks",
-    time_ref == 2 ~ "4 to 8 weeks",
-    time_ref == 3 ~ ">8 weeks")) %>%
+           case_when(
+             time_ref == 1 ~ "0 to 4 weeks",
+             time_ref == 2 ~ "4 to 8 weeks",
+             time_ref == 3 ~ ">8 weeks")) %>%
   select(kpi, sex, simd2016, waiting_time)
 
 KPI_data_full <- left_join(skeleton, KPI_data, 
