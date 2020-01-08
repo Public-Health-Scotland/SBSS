@@ -10,14 +10,14 @@
 ##########################################################
 
 # Define dates
-date_first <- "2016-11-01"
-date_last <- "2018-10-31"
+date_first <- "2017-05-01"
+date_last <- "2019-04-30"
 
 # Define bowel screening database (SPSS database)
 sbsdb_path <- (paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Data/",
-                      "Programme/2019-05/combined_extract_all.zsav"))
+                      "Programme/2019-11/combined_extract_all.zsav"))
 
 # Define location of analysis database (created in script 1)
 analysis_db_path <- (paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-                            "Publications/SBoSP-Statistics/20190806/Temp/",
+                            "Publications/SBoSP-Statistics/201200204/Temp/",
                             "analysis_dataset.rds"))
