@@ -17,6 +17,7 @@ library(here)
 library(haven)
 library(janitor)
 library(XLConnect)
+library(tidylog)
 
 #   set filepaths and extract dates with script 0
 source(here::here("code", "0_housekeeping.R"))
@@ -38,63 +39,7 @@ analysis_db <- filter(analysis_db,
                               as.Date(date_first),
                               as.Date(date_last)) &
                         optin == 0 &
-                        hbr14 %in% 1:14) %>%
-  ## Define additional variables
-  # KPI 21, 22 24 and 25 require variables to be created
-  # TO DO, maybe - include these as part of script 1?
-  mutate(
-    canc_col_n = cancer_n * col_perf_n,
-    adenoma_col_n = adenoma_n * col_perf_n,
-    hr_adenoma_col_n = hr_adenoma_n * col_perf_n,
-    canc_hr_n = cancer_n * col_perf_n + hr_adenoma_n * col_perf_n,
-    all_neoplasia_n = cancer_n * col_perf_n + adenoma_n * col_perf_n,
-    negative_n = ifelse(screres %in% c(1,4,7,21), 1, 0),
-    # Colonoscopy complication excluding "other"
-    col_complic_o_n = if_else(complicp == 98, 0, col_complic_n),
-    # Death due to colonoscopy complications
-    col_death_n = if_else(complicp == 6, 1, 0),
-    # Unclassified risk adenomas
-    uncl_adenoma_n = if_else(adenoma_n == 1 &
-                               (lr_adenoma_n + ir_adenoma_n + hr_adenoma_n) == 0,
-                             1, 0),
-    # All adenomas, including those where cancer is diagnosed
-    all_adenoma_n = if_else(adenoma == "01", 1, 0),
-    # More granular waiting time
-    waiting_time = ifelse(
-      col_perf_n == 1, 
-      case_when(
-        between(date_diff, 1, 14) ~ "0 to 2 weeks",
-        between(date_diff, 15, 28) ~ ">2 to 4 weeks",
-        between(date_diff, 29, 42) ~ ">4 to 6 weeks",
-        between(date_diff, 43, 56) ~ ">6 to 8 weeks",
-        between(date_diff, 57, 70) ~ ">8 to 10 weeks",
-        between(date_diff, 71, 84) ~ ">10 to 12 weeks",
-        between(date_diff, 85, 98) ~ ">12 to 14 weeks",
-        between(date_diff, 99, 112) ~ ">14 to 16 weeks",
-        between(date_diff, 113, 126) ~ ">16 to 18 weeks",
-        between(date_diff, 127, 140) ~ ">18 to 20 weeks",
-        date_diff > 140 ~ ">20 weeks"),
-      "No colonoscopy"
-    ),
-    icd = substr(icd10, 1, 3)) %>%
-  ## Order levels of waiting_times for output
-  ## Noticed that there are 3 NA values, these are all colonoscopies on the 
-  ## same day as screening result date, update script 1
-  ## TO DO - move to script 1
-  replace_na(list(waiting_time = "No colonoscopy")) %>%
-  mutate(waiting_time = forcats::fct_relevel(waiting_time,
-                                             "0 to 2 weeks",
-                                             ">2 to 4 weeks",
-                                             ">4 to 6 weeks",
-                                             ">6 to 8 weeks",
-                                             ">8 to 10 weeks",
-                                             ">10 to 12 weeks",
-                                             ">12 to 14 weeks",
-                                             ">14 to 16 weeks",
-                                             ">16 to 18 weeks",
-                                             ">18 to 20 weeks",
-                                             ">20 weeks",
-                                             "No colonoscopy"))
+                        hbr14 %in% 1:14)
 
 
 # Summarise for required variables
@@ -217,13 +162,13 @@ summary_dukes <- analysis_db %>%
 
 
 summary_wt <- analysis_db %>%
-  group_by(waiting_time, hbr14) %>%
+  group_by(waiting_time_hb, hbr14) %>%
   summarise(
     col_perf_n = sum(col_perf_n)
   ) %>%
   ungroup() %>%
-  filter(waiting_time != "No colonoscopy") %>%
-  mutate(waiting_time = recode(waiting_time,
+  filter(waiting_time_hb != "No colonoscopy") %>%
+  mutate(waiting_time_hb = recode(waiting_time_hb,
                                "0 to 2 weeks" = "wt_0_2",
                                ">2 to 4 weeks" = "wt_2_4",
                                ">4 to 6 weeks" = "wt_4_6",
@@ -235,7 +180,7 @@ summary_wt <- analysis_db %>%
                                ">16 to 18 weeks" = "wt_16_18",
                                ">18 to 20 weeks" = "wt_18_20",
                                ">20 weeks" = "wt_over_20")) %>%
-  spread(waiting_time, col_perf_n) %>%
+  spread(waiting_time_hb, col_perf_n) %>%
   replace_na(list(wt_0_2 = 0,
                   wt_2_4 = 0,
                   wt_4_6 = 0,
@@ -247,7 +192,7 @@ summary_wt <- analysis_db %>%
                   wt_16_18 = 0,
                   wt_18_20 = 0,
                   wt_over_20 = 0
-                  )) %>%
+  )) %>%
   group_by(hbr14) %>%
   mutate(wt_0_2 = max(wt_0_2),
          wt_2_4 = max(wt_2_4),
@@ -274,10 +219,10 @@ summary_icd <- analysis_db %>%
   ) %>%
   ungroup() %>%
   mutate(icd = recode(icd,
-                            "99" = "icd_nk",
-                            "C18" = "icd_c18",
-                            "C19" = "icd_c19",
-                            "C20" = "icd_c20")) %>%
+                      "99" = "icd_nk",
+                      "C18" = "icd_c18",
+                      "C19" = "icd_c19",
+                      "C20" = "icd_c20")) %>%
   spread(icd, cancer_n) %>%
   replace_na(list(icd_nk = 0,
                   icd_c18 = 0,
@@ -374,7 +319,7 @@ summary_all <- left_join(
 ## Clear unnecessary tables
 
 rm(analysis_db, summary_dukes, summary_icd, summary_one, summary_simd_invite,
-        summary_simd_uptake, summary_total_invite, summary_total_uptake, summary_wt)
+   summary_simd_uptake, summary_total_invite, summary_total_uptake, summary_wt)
 
 
 
@@ -394,63 +339,7 @@ analysis_db <- filter(analysis_db,
                               as.Date(date_last)) &
                         optin == 0 &
                         hbr14 %in% 1:14 &
-                        sex ==1) %>%
-  ## Define additional variables
-  # KPI 21, 22 24 and 25 require variables to be created
-  # TO DO, maybe - include these as part of script 1?
-  mutate(
-    canc_col_n = cancer_n * col_perf_n,
-    adenoma_col_n = adenoma_n * col_perf_n,
-    hr_adenoma_col_n = hr_adenoma_n * col_perf_n,
-    canc_hr_n = cancer_n * col_perf_n + hr_adenoma_n * col_perf_n,
-    all_neoplasia_n = cancer_n * col_perf_n + adenoma_n * col_perf_n,
-    negative_n = ifelse(screres %in% c(1,4,7,21), 1, 0),
-    # Colonoscopy complication excluding "other"
-    col_complic_o_n = if_else(complicp == 98, 0, col_complic_n),
-    # Death due to colonoscopy complications
-    col_death_n = if_else(complicp == 6, 1, 0),
-    # Unclassified risk adenomas
-    uncl_adenoma_n = if_else(adenoma_n == 1 &
-                               (lr_adenoma_n + ir_adenoma_n + hr_adenoma_n) == 0,
-                             1, 0),
-    # All adenomas, including those where cancer is diagnosed
-    all_adenoma_n = if_else(adenoma == "01", 1, 0),
-    # More granular waiting time
-    waiting_time = ifelse(
-      col_perf_n == 1, 
-      case_when(
-        between(date_diff, 1, 14) ~ "0 to 2 weeks",
-        between(date_diff, 15, 28) ~ ">2 to 4 weeks",
-        between(date_diff, 29, 42) ~ ">4 to 6 weeks",
-        between(date_diff, 43, 56) ~ ">6 to 8 weeks",
-        between(date_diff, 57, 70) ~ ">8 to 10 weeks",
-        between(date_diff, 71, 84) ~ ">10 to 12 weeks",
-        between(date_diff, 85, 98) ~ ">12 to 14 weeks",
-        between(date_diff, 99, 112) ~ ">14 to 16 weeks",
-        between(date_diff, 113, 126) ~ ">16 to 18 weeks",
-        between(date_diff, 127, 140) ~ ">18 to 20 weeks",
-        date_diff > 140 ~ ">20 weeks"),
-      "No colonoscopy"
-    ),
-    icd = substr(icd10, 1, 3)) %>%
-  ## Order levels of waiting_times for output
-  ## Noticed that there are 3 NA values, these are all colonoscopies on the 
-  ## same day as screening result date, update script 1
-  ## TO DO - move to script 1
-  replace_na(list(waiting_time = "No colonoscopy")) %>%
-  mutate(waiting_time = forcats::fct_relevel(waiting_time,
-                                             "0 to 2 weeks",
-                                             ">2 to 4 weeks",
-                                             ">4 to 6 weeks",
-                                             ">6 to 8 weeks",
-                                             ">8 to 10 weeks",
-                                             ">10 to 12 weeks",
-                                             ">12 to 14 weeks",
-                                             ">14 to 16 weeks",
-                                             ">16 to 18 weeks",
-                                             ">18 to 20 weeks",
-                                             ">20 weeks",
-                                             "No colonoscopy"))
+                        sex ==1)
 
 
 # Summarise for required variables
@@ -574,13 +463,13 @@ summary_dukes <- analysis_db %>%
 
 
 summary_wt <- analysis_db %>%
-  group_by(waiting_time, hbr14) %>%
+  group_by(waiting_time_hb, hbr14) %>%
   summarise(
     col_perf_n = sum(col_perf_n)
   ) %>%
   ungroup() %>%
-  filter(waiting_time != "No colonoscopy") %>%
-  mutate(waiting_time = recode(waiting_time,
+  filter(waiting_time_hb != "No colonoscopy") %>%
+  mutate(waiting_time_hb = recode(waiting_time_hb,
                                "0 to 2 weeks" = "wt_0_2",
                                ">2 to 4 weeks" = "wt_2_4",
                                ">4 to 6 weeks" = "wt_4_6",
@@ -592,7 +481,7 @@ summary_wt <- analysis_db %>%
                                ">16 to 18 weeks" = "wt_16_18",
                                ">18 to 20 weeks" = "wt_18_20",
                                ">20 weeks" = "wt_over_20")) %>%
-  spread(waiting_time, col_perf_n) %>%
+  spread(waiting_time_hb, col_perf_n) %>%
   replace_na(list(wt_0_2 = 0,
                   wt_2_4 = 0,
                   wt_4_6 = 0,
@@ -750,63 +639,7 @@ analysis_db <- filter(analysis_db,
                               as.Date(date_last)) &
                         optin == 0 &
                         hbr14 %in% 1:14 &
-                        sex == 2) %>%
-  ## Define additional variables
-  # KPI 21, 22 24 and 25 require variables to be created
-  # TO DO, maybe - include these as part of script 1?
-  mutate(
-    canc_col_n = cancer_n * col_perf_n,
-    adenoma_col_n = adenoma_n * col_perf_n,
-    hr_adenoma_col_n = hr_adenoma_n * col_perf_n,
-    canc_hr_n = cancer_n * col_perf_n + hr_adenoma_n * col_perf_n,
-    all_neoplasia_n = cancer_n * col_perf_n + adenoma_n * col_perf_n,
-    negative_n = ifelse(screres %in% c(1,4,7,21), 1, 0),
-    # Colonoscopy complication excluding "other"
-    col_complic_o_n = if_else(complicp == 98, 0, col_complic_n),
-    # Death due to colonoscopy complications
-    col_death_n = if_else(complicp == 6, 1, 0),
-    # Unclassified risk adenomas
-    uncl_adenoma_n = if_else(adenoma_n == 1 &
-                               (lr_adenoma_n + ir_adenoma_n + hr_adenoma_n) == 0,
-                             1, 0),
-    # All adenomas, including those where cancer is diagnosed
-    all_adenoma_n = if_else(adenoma == "01", 1, 0),
-    # More granular waiting time
-    waiting_time = ifelse(
-      col_perf_n == 1, 
-      case_when(
-        between(date_diff, 1, 14) ~ "0 to 2 weeks",
-        between(date_diff, 15, 28) ~ ">2 to 4 weeks",
-        between(date_diff, 29, 42) ~ ">4 to 6 weeks",
-        between(date_diff, 43, 56) ~ ">6 to 8 weeks",
-        between(date_diff, 57, 70) ~ ">8 to 10 weeks",
-        between(date_diff, 71, 84) ~ ">10 to 12 weeks",
-        between(date_diff, 85, 98) ~ ">12 to 14 weeks",
-        between(date_diff, 99, 112) ~ ">14 to 16 weeks",
-        between(date_diff, 113, 126) ~ ">16 to 18 weeks",
-        between(date_diff, 127, 140) ~ ">18 to 20 weeks",
-        date_diff > 140 ~ ">20 weeks"),
-      "No colonoscopy"
-    ),
-    icd = substr(icd10, 1, 3)) %>%
-  ## Order levels of waiting_times for output
-  ## Noticed that there are 3 NA values, these are all colonoscopies on the 
-  ## same day as screening result date, update script 1
-  ## TO DO - move to script 1
-  replace_na(list(waiting_time = "No colonoscopy")) %>%
-  mutate(waiting_time = forcats::fct_relevel(waiting_time,
-                                             "0 to 2 weeks",
-                                             ">2 to 4 weeks",
-                                             ">4 to 6 weeks",
-                                             ">6 to 8 weeks",
-                                             ">8 to 10 weeks",
-                                             ">10 to 12 weeks",
-                                             ">12 to 14 weeks",
-                                             ">14 to 16 weeks",
-                                             ">16 to 18 weeks",
-                                             ">18 to 20 weeks",
-                                             ">20 weeks",
-                                             "No colonoscopy"))
+                        sex == 2)
 
 
 # Summarise for required variables
@@ -931,13 +764,13 @@ summary_dukes <- analysis_db %>%
 
 
 summary_wt <- analysis_db %>%
-  group_by(waiting_time, hbr14) %>%
+  group_by(waiting_time_hb, hbr14) %>%
   summarise(
     col_perf_n = sum(col_perf_n)
   ) %>%
   ungroup() %>%
-  filter(waiting_time != "No colonoscopy") %>%
-  mutate(waiting_time = recode(waiting_time,
+  filter(waiting_time_hb != "No colonoscopy") %>%
+  mutate(waiting_time_hb = recode(waiting_time_hb,
                                "0 to 2 weeks" = "wt_0_2",
                                ">2 to 4 weeks" = "wt_2_4",
                                ">4 to 6 weeks" = "wt_4_6",
@@ -949,7 +782,7 @@ summary_wt <- analysis_db %>%
                                ">16 to 18 weeks" = "wt_16_18",
                                ">18 to 20 weeks" = "wt_18_20",
                                ">20 weeks" = "wt_over_20")) %>%
-  spread(waiting_time, col_perf_n) %>%
+  spread(waiting_time_hb, col_perf_n) %>%
   replace_na(list(wt_0_2 = 0,
                   wt_2_4 = 0,
                   wt_4_6 = 0,
