@@ -162,13 +162,13 @@ summary_dukes <- analysis_db %>%
 
 
 summary_wt <- analysis_db %>%
-  group_by(waiting_time, hbr14) %>%
+  group_by(waiting_time_hb, hbr14) %>%
   summarise(
     col_perf_n = sum(col_perf_n)
   ) %>%
   ungroup() %>%
-  filter(waiting_time != "No colonoscopy") %>%
-  mutate(waiting_time = recode(waiting_time,
+  filter(waiting_time_hb != "No colonoscopy") %>%
+  mutate(waiting_time_hb = recode(waiting_time_hb,
                                "0 to 2 weeks" = "wt_0_2",
                                ">2 to 4 weeks" = "wt_2_4",
                                ">4 to 6 weeks" = "wt_4_6",
@@ -180,7 +180,7 @@ summary_wt <- analysis_db %>%
                                ">16 to 18 weeks" = "wt_16_18",
                                ">18 to 20 weeks" = "wt_18_20",
                                ">20 weeks" = "wt_over_20")) %>%
-  spread(waiting_time, col_perf_n) %>%
+  spread(waiting_time_hb, col_perf_n) %>%
   replace_na(list(wt_0_2 = 0,
                   wt_2_4 = 0,
                   wt_4_6 = 0,
@@ -463,13 +463,13 @@ summary_dukes <- analysis_db %>%
 
 
 summary_wt <- analysis_db %>%
-  group_by(waiting_time, hbr14) %>%
+  group_by(waiting_time_hb, hbr14) %>%
   summarise(
     col_perf_n = sum(col_perf_n)
   ) %>%
   ungroup() %>%
-  filter(waiting_time != "No colonoscopy") %>%
-  mutate(waiting_time = recode(waiting_time,
+  filter(waiting_time_hb != "No colonoscopy") %>%
+  mutate(waiting_time_hb = recode(waiting_time_hb,
                                "0 to 2 weeks" = "wt_0_2",
                                ">2 to 4 weeks" = "wt_2_4",
                                ">4 to 6 weeks" = "wt_4_6",
@@ -481,7 +481,7 @@ summary_wt <- analysis_db %>%
                                ">16 to 18 weeks" = "wt_16_18",
                                ">18 to 20 weeks" = "wt_18_20",
                                ">20 weeks" = "wt_over_20")) %>%
-  spread(waiting_time, col_perf_n) %>%
+  spread(waiting_time_hb, col_perf_n) %>%
   replace_na(list(wt_0_2 = 0,
                   wt_2_4 = 0,
                   wt_4_6 = 0,
@@ -764,13 +764,13 @@ summary_dukes <- analysis_db %>%
 
 
 summary_wt <- analysis_db %>%
-  group_by(waiting_time, hbr14) %>%
+  group_by(waiting_time_hb, hbr14) %>%
   summarise(
     col_perf_n = sum(col_perf_n)
   ) %>%
   ungroup() %>%
-  filter(waiting_time != "No colonoscopy") %>%
-  mutate(waiting_time = recode(waiting_time,
+  filter(waiting_time_hb != "No colonoscopy") %>%
+  mutate(waiting_time_hb = recode(waiting_time_hb,
                                "0 to 2 weeks" = "wt_0_2",
                                ">2 to 4 weeks" = "wt_2_4",
                                ">4 to 6 weeks" = "wt_4_6",
@@ -782,7 +782,7 @@ summary_wt <- analysis_db %>%
                                ">16 to 18 weeks" = "wt_16_18",
                                ">18 to 20 weeks" = "wt_18_20",
                                ">20 weeks" = "wt_over_20")) %>%
-  spread(waiting_time, col_perf_n) %>%
+  spread(waiting_time_hb, col_perf_n) %>%
   replace_na(list(wt_0_2 = 0,
                   wt_2_4 = 0,
                   wt_4_6 = 0,
