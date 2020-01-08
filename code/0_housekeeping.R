@@ -1,11 +1,11 @@
 ##########################################################
 # 0_housekeeping.R
 # Gavin Clark
-# 28/06/2019
+# 08/01/2019
 # Script 0 of ?
 # Define some housekeeping variables used by subsequent scripts
 # Written/run on R Studio Server
-# R version 3.2.3
+# R version 3.6.1
 
 ##########################################################
 
