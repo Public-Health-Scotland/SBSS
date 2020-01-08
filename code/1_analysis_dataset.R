@@ -2,10 +2,10 @@
 ##########################################################
 # Analysis_dataset_.R
 # Gavin Clark
-# 28/06/2019
+# 08/01/2019
 # Data extraction/preparation
 # Written/run on R Studio Server
-# R version 3.2.3
+# R version 3.6.1
 # This script creates a dataset for summary in later scripts
 # This is not a step carried out in the SPSS flow, but should save time 
 # over the course of KPI production
@@ -50,7 +50,7 @@ slim_db <- raw_db %>% select(
   clean_names()
 
 ## glimpse() shows that date fields are being correctly read in
-## 8,988,877 records, same as SPSS
+## 9,454,841 records
 
 
 ### Remove flexi. sig. study participants
@@ -68,7 +68,7 @@ slim_db <- left_join(slim_db, flexi_sig, by = "chinum") %>%
                            !screres %in% c(1,3,4,5,6,7,8), 1, 0)) %>%
   filter(remove == 0|is.na(remove)) %>%
   select(-(FSPERF:remove))
-# 27 removed, 8,988,850 remain
+# 27 removed, 8,454,814 remain, 27 removed
 
 
 # Remove tables that are no longer needed
@@ -167,7 +167,7 @@ check <- slim_db %>%
     hr_adenoma_ppv_approx = sum(hr_adenoma_n)/sum(col_perf_n),
     hr_adenoma_ppv_true = sum(hr_adenoma_col_n)/sum(col_perf_n),
     hr_adenoma_cancer_ppv_true = sum(canc_hr_n)/sum(col_perf_n),
-    all_neoplasia_ppv_true = sum(all_neoplasia_n)/sum(col_perf_n),
+    all_neoplasia_ppv_true = sum(all_neoplasia_n)/sum(col_perf_n)
   )
 View(check)
 
@@ -270,6 +270,13 @@ slim_db <- slim_db %>%
                   ),
                   "")
   )
+
+## GC at this point
+## GC edit - for those not supplied close to the 
+# move to TNM8, apply algorithm
+check <- slim_db %>%
+  filter(dukes_der == "Not supplied" & screresdat >= as.Date("2017-10-01")
+         )
 
 slim_db %>% count(dukes_der)  
 
