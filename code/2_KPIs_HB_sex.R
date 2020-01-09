@@ -1,11 +1,11 @@
 ##########################################################
 # 2_KPIs_HB_sex.R
 # Gavin Clark
-# 28/06/2019
+# 09/01/2019
 # Script 2 of ?
 # Data preparation for export
 # Written/run on R Studio Server
-# R version 3.2.3
+# R version 3.6.1
 # This script creates the 2-year percentage and demography tables for KPI report
 # Transcribed from scripts at:
 # \\stats\CancerGroup1\Topics\BowelScreening\Publications\SBoSP-Statistics\
@@ -132,8 +132,9 @@ analysis_db <- filter(analysis_db,
                               as.Date(date_last)) &
                         optin == 0 &
                         hbr14 %in% 1:14)
-# 1,844,815 - same as SPSS - Nov18 upload
+# 1,884,815 - same as SPSS - Nov18 upload
 # 1,866,332 - May19 upload 
+# 1,884,318 - Nov19 upload
 
 
 # Next step in SPSS is flexi-sig removal, this has been done in R script 1
@@ -202,10 +203,27 @@ KPI_4 <-
                  "waiting_time",
                  "col_perf_n",
                  4) %>% arrange(sex)
+
 KPI_9_15 <- KPI_proportion("dukes_der", "", "dukes_der", "cancer_n", 9) %>%
-  mutate(KPI = c(9,9,9,10,10,10,11,11,11,12,12,12,13,13,13,14,14,14))
+  mutate(KPI = c(9,9,9,10,10,10,11,11,11,12,12,12,13,13,13
+                 #,14,14,14
+                 )) 
+# Include lines for Dukes not supplied
+not_supplied <- data.frame(
+  sex = c(1,2,3),
+  dukes_der = c("Not supplied", "Not supplied", "Not supplied"),
+  KPI = c(14,14,14)
+)
+
+# Append to other KPIs
+KPI_9_15 <- bind_rows(KPI_9_15, not_supplied)
+
 # GC TO DO, automate this all so that it can be merged with skeleton/
 # have the correct number of rows
+check <- analysis_db %>% filter(dukes == "99" &
+                              dukes_der == "Not known")
+
+
 KPI_26_28 <- KPI_proportion("icd", "", "icd", "cancer_n", 26) %>%
   filter(icd %in% c("C18","C19","C20")) %>%
   mutate( KPI = c(26,26,26,27,27,27,28,28,28))

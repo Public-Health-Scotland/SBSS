@@ -68,7 +68,7 @@ slim_db <- left_join(slim_db, flexi_sig, by = "chinum") %>%
                            !screres %in% c(1,3,4,5,6,7,8), 1, 0)) %>%
   filter(remove == 0|is.na(remove)) %>%
   select(-(FSPERF:remove))
-# 27 removed, 8,454,814 remain, 27 removed
+# 27 removed, 9,454,814 remain
 
 
 # Remove tables that are no longer needed
@@ -256,7 +256,6 @@ slim_db <- slim_db %>%
                            tnmt %in% c("T3","T4","pT3","pT4") ~ "B",
                            tnmt %in% c("T1","T2","pT1","pT2") ~ "A",
                            TRUE ~ "Not known"),
-                         
                          ifelse(screresdat < as.Date("2018-01-01"),
                                 case_when(
                                   dukes == "04" ~ "D",
@@ -268,14 +267,28 @@ slim_db <- slim_db %>%
                                   TRUE ~ "Not supplied"),
                                 "")
                   ),
-                  "")
+                  ""),
+# GC update - some colonoscopies in 2017 where pathology likely from 2018 and so
+# dukes is not populated. Assume those in this publication period can be passed through
+# the translation algorithm.
+dukes_der = if_else(
+  screresdat >= as.Date("2017-05-01") & dukes == "96",
+  case_when(
+    tnmm %in% c("M1","pM1") ~ "D",
+    tnmn %in% c("N1", "N2", "pN1", "pN2") ~ "C",
+    tnmt %in% c("T3","T4","pT3","pT4") ~ "B",
+    tnmt %in% c("T1","T2","pT1","pT2") ~ "A",
+    TRUE ~ "Not known"
+    ), dukes_der
   )
+)
+
 
 ## GC at this point
 ## GC edit - for those not supplied close to the 
 # move to TNM8, apply algorithm
 check <- slim_db %>%
-  filter(dukes_der == "Not supplied" & screresdat >= as.Date("2017-10-01")
+  filter(is.na(dukes_der)
          )
 
 slim_db %>% count(dukes_der)  
@@ -407,8 +420,10 @@ slim_db %>% count(uptake_history)
 #   summarize(invite_n = sum(invite_n),
 #             uptake_p = sum(uptake_n)/sum(invite_n))
 
-# Are there any people who have fit positive with no haemoglobin?
-check <- slim_db %>% filter(screres == 22 & !is.na(haemoglobin))
+# Are there any people who have fit positive with no haemoglobin or less than 80?
+# no
+check <- slim_db %>% filter(screres == 22 & 
+                              (is.na(haemoglobin)|haemoglobin < 80))
 
 #### Percentages in line with SPSS, counts are slightly out (low hundreds)
 # Need to pick up those with blank date round 1 with IT

@@ -28,7 +28,7 @@ source(here::here("code", "0_housekeeping.R"))
 KPI_data <- readRDS(here("Temp", "KPI_data.rds")) %>%
   select(-sex, -KPI, -waiting_time, -simd2016, -icd, -dukes_der)
 
-wb <- loadWorkbook(here("Output", "2019-08-06-Bowel-Screening-KPI-Report.xlsx"))
+wb <- loadWorkbook(here("Output", "2020-02-04-Bowel-Screening-KPI-Report.xlsx"))
 setStyleAction(wb, XLC$"STYLE_ACTION.NONE")
 
 writeWorksheet(wb, KPI_data,"data",startRow = 11, startCol = 20, header = FALSE)
@@ -128,7 +128,7 @@ saveWorkbook(wb)
 ## FIT/FOBT report
 
 wb <- loadWorkbook(here("Output/CONFI-FIT-FOBT-comparison",
-                        "FIT-FOBT-Comparison-Nov-17 to Oct-18.xlsx"))
+                        "FIT-FOBT-Comparison-Nov-17 to Apr-19.xlsx"))
 setStyleAction(wb, XLC$"STYLE_ACTION.NONE")
 
 # Uptake

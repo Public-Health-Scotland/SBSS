@@ -147,14 +147,15 @@ names(sbsp_slimdb)
 #Select report time period and comparison time period
 test_comp_db <- sbsp_slimdb %>% 
   mutate(test_type = case_when(
-    (invdate >= as.Date("2016-11-20") & invdate <= as.Date("2017-10-31")) ~ 1,
-    (invdate >= as.Date("2017-11-20") & invdate <= as.Date("2018-10-31")) ~ 2)
+    (invdate >= as.Date("2015-11-20") & invdate <= as.Date("2017-04-30")) ~ 1,
+    (invdate >= as.Date("2017-11-20") & invdate <= as.Date("2019-04-30")) ~ 2)
   ) %>%
   filter(test_type ==1|test_type ==2) #%>%
 # GC TO DO - Need to think about whether it is still appropriate to exclude 
 # those with no simd
 #filter(simd2016 %in% 1:5)
 # 1,779,452 - same in SPSS
+# 2,691,777 Nov 19
 
 #################################################
 #Calculate test comparison for each KPI 

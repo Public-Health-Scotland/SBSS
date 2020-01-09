@@ -1,11 +1,11 @@
 ##########################################################
 # 4_time_series.R
 # Gavin Clark
-# 29/05/2019
+# 08/01/2020
 # Script 4 of ?
 # Data preparation and summary for export
 # Written/run on R Studio Server
-# R version 3.2.3
+# R version 3.6.1
 # This script creates the 2-year time-series tables for the KPI report
 # Transcribed from scripts at:
 # \\stats\CancerGroup1\Topics\BowelScreening\Publications\SBoSP-Statistics\
@@ -131,35 +131,38 @@ analysis_db <-
   # This means that the same record needs to end up in 2 periods e.g. a test in
   # May 2009 should be in 2008/10 and 2009/11
   mutate(
-    year_07_09 = ifelse(invdate >= as.Date("2007-11-01") &
-                          invdate <= as.Date("2009-10-31"),
+    year_07_09 = ifelse(invdate >= as.Date("2007-05-01") &
+                          invdate <= as.Date("2009-04-30"),
                         1, 0),
-    year_08_10 = ifelse(invdate >= as.Date("2008-11-01") &
-                          invdate <= as.Date("2010-10-31"),
+    year_08_10 = ifelse(invdate >= as.Date("2008-05-01") &
+                          invdate <= as.Date("2010-04-30"),
                         1, 0),
-    year_09_11 = ifelse(invdate >= as.Date("2009-11-01") &
-                          invdate <= as.Date("2011-10-31"),
+    year_09_11 = ifelse(invdate >= as.Date("2009-05-01") &
+                          invdate <= as.Date("2011-04-30"),
                         1, 0),
-    year_10_12 = ifelse(invdate >= as.Date("2010-11-01") &
-                          invdate <= as.Date("2012-10-31"),
+    year_10_12 = ifelse(invdate >= as.Date("2010-05-01") &
+                          invdate <= as.Date("2012-04-30"),
                         1, 0),
-    year_11_13 = ifelse(invdate >= as.Date("2011-11-01") &
-                          invdate <= as.Date("2013-10-31"),
+    year_11_13 = ifelse(invdate >= as.Date("2011-05-01") &
+                          invdate <= as.Date("2013-04-30"),
                         1, 0),
-    year_12_14 = ifelse(invdate >= as.Date("2012-11-01") &
-                          invdate <= as.Date("2014-10-31"),
+    year_12_14 = ifelse(invdate >= as.Date("2012-05-01") &
+                          invdate <= as.Date("2014-04-30"),
                         1, 0),
-    year_13_15 = ifelse(invdate >= as.Date("2013-11-01") &
-                          invdate <= as.Date("2015-10-31"),
+    year_13_15 = ifelse(invdate >= as.Date("2013-05-01") &
+                          invdate <= as.Date("2015-04-30"),
                         1, 0),
-    year_14_16 = ifelse(invdate >= as.Date("2014-11-01") &
-                          invdate <= as.Date("2016-10-31"),
+    year_14_16 = ifelse(invdate >= as.Date("2014-05-01") &
+                          invdate <= as.Date("2016-04-30"),
                         1, 0),
-    year_15_17 = ifelse(invdate >= as.Date("2015-11-01") &
-                          invdate <= as.Date("2017-10-31"),
+    year_15_17 = ifelse(invdate >= as.Date("2015-05-01") &
+                          invdate <= as.Date("2017-04-30"),
                         1, 0),
-    year_16_18 = ifelse(invdate >= as.Date("2016-11-01") &
-                          invdate <= as.Date("2018-10-31"),
+    year_16_18 = ifelse(invdate >= as.Date("2016-05-01") &
+                          invdate <= as.Date("2018-04-30"),
+                        1, 0),
+    year_17_19 = ifelse(invdate >= as.Date("2017-05-01") &
+                          invdate <= as.Date("2019-04-30"),
                         1, 0),
     # Create cancer definitions for PPV measures
     canc_col_n = cancer_n * col_perf_n,
@@ -186,7 +189,7 @@ ts_data <- bind_rows(uptake_ts, positivity_ts, cancer_ts, adenoma_ts,
 
 # Calculate cancer staging time-series
 cancer_ts <- analysis_db %>% filter(cancer_n == 1) %>%
-  select(dukes_der, year_07_09:year_16_18) %>%
+  select(dukes_der, year_07_09:year_17_19) %>%
   group_by(dukes_der) %>%
   summarise(
     year_07_09 = sum(year_07_09),
@@ -198,7 +201,8 @@ cancer_ts <- analysis_db %>% filter(cancer_n == 1) %>%
     year_13_15 = sum(year_13_15),
     year_14_16 = sum(year_14_16),
     year_15_17 = sum(year_15_17),
-    year_16_18 = sum(year_16_18)
+    year_16_18 = sum(year_16_18),
+    year_17_19 = sum(year_17_19)
   ) %>%
   ungroup() %>%
   mutate(
@@ -211,16 +215,14 @@ cancer_ts <- analysis_db %>% filter(cancer_n == 1) %>%
     prop_13_15 = year_13_15/sum(year_13_15)*100,
     prop_14_16 = year_14_16/sum(year_14_16)*100,
     prop_15_17 = year_15_17/sum(year_15_17)*100,
-    prop_16_18 = year_16_18/sum(year_16_18)*100
+    prop_16_18 = year_16_18/sum(year_16_18)*100,
+    prop_17_19 = year_17_19/sum(year_17_19)*100
   ) %>%
-  select(dukes_der, prop_07_09:prop_16_18)
+  select(dukes_der, prop_07_09:prop_17_19)
 
 
 # Save final outputs
-saveRDS(ts_data, 
-        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Publications/",
-                      "SBoSP-Statistics/20190806/Temp/",
-                        "ts_data.rds"))
+saveRDS(ts_data, file = here("/Temp/","ts_data.rds"))
 
 saveRDS(cancer_ts, here::here("Temp", "cancer_ts.rds"))
 

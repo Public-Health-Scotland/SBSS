@@ -1,11 +1,11 @@
 ##########################################################
 # 3_funnel_plot_limits_data.R
 # Thomas Godfrey
-# 10/06/2019
+# 09/01/2019
 # Script 3
 # Preparation of data for export (See Purpose)
 # Written/run on R Studio server: and so uses //PHI_conf/
-# R version 3.5.1 
+# R version 3.6.1 
 # This script creates Confidence Interval data for funnel plots in Excel
 # Transcribed from SPSS script "2_KPI_graphs_limits_N18.sps"
 # At:
@@ -137,9 +137,7 @@ denom_n_hb <- slim_db %>%
 
 # Save output file
 saveRDS(denom_n_hb, 
-        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Publications/",
-                      "SBoSP-Statistics/20190806/Temp/",
-                      "Funnel-data_HB-denominators.rds"))
+        file = here("Temp/", "Funnel-data_HB-denominators.rds"))
 
 ## Step 3: Calculate Wilson Score confidence intervals.
 
@@ -170,8 +168,7 @@ funnel_limits_skeleton <- crossing(KPI,sex,n)
 ## Import Scotland-level KPI estimates from 'KPI_data.rds' produced in script 2.
 #Note: could alternatively recalculate estimates on-the-fly & label with KPI no. & sex.
 
-Scotland_KPIs_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-"Publications/SBoSP-Statistics/20190806/Temp//KPI_data.rds"))
+Scotland_KPIs_db <- readRDS(here("/Temp/","KPI_data.rds"))
 
 dim(Scotland_KPIs_db)
 names(Scotland_KPIs_db)
@@ -251,6 +248,4 @@ conf_limits_output <-  select(conf_limits_output,
 #                path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/",
 #                              "Code + DB/TPP/data/Funnel-data_Confidence-limits.csv"))
 saveRDS(conf_limits_output, 
-        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Publications/",
-                      "SBoSP-Statistics/20190806/Temp/",
-                      "Funnel-data_Confidence-limits.rds"))
+        file = here("Temp","Funnel-data_Confidence-limits.rds"))
