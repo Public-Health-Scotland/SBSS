@@ -254,3 +254,34 @@ check <- test_comp_db %>%
             hr_adenoma_col_n = sum(hr_adenoma_col_n),
             hr_adenoma_diff = hr_adenoma_n - hr_adenoma_col_n)
 end <- Sys.time()
+
+
+###############################################################################
+# Calculate absolute numbers for key indicators
+# i) actual numbers testing positive- and therefore being 
+# ii) actual number diagnosed with cancer
+
+
+# i) Total persons testing positive
+total_positive <- test_comp_db %>%
+                group_by(test_type) %>%
+                summarise(total_n_positive = sum(positive_n)) %>%
+                ungroup()
+total_positive
+
+# Save
+write_csv(total_positive, here("Temp","total_positive.csv"))
+
+
+
+# ii) Total persons diagnosed with cancer.
+total_diagnosed_cancer <- test_comp_db %>%
+                group_by(test_type) %>%
+                summarise(total_n_cancer = sum(cancer_n)) %>%
+                ungroup()
+total_diagnosed_cancer
+
+# Save
+write_csv(total_diagnosed_cancer, here("Temp", "total_diagnosed_cancer.csv"))
+
+
