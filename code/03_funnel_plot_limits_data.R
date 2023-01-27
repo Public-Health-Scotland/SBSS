@@ -1,15 +1,15 @@
-##########################################################
-# 3_funnel_plot_limits_data.R
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 03_funnel_plot_limits_data.R
 # Thomas Godfrey
-# 10/06/2019
-# Script 3
+# Aug 2022
+# Script 3 of 13
 # Preparation of data for export (See Purpose)
 # Written/run on R Studio server: and so uses //PHI_conf/
-# R version 3.5.1 
+# R version 3.6.1 
 # This script creates Confidence Interval data for funnel plots in Excel
 # Transcribed from SPSS script "2_KPI_graphs_limits_N18.sps"
 # At:
-##########################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### Purpose of this script
 # Previous Script generates "KPI_data.rds" containing results for KPIs 1-26 by HB.
@@ -53,7 +53,7 @@
 #      an then 'hidden' but used to generate charts. 
 
 
-### Step 1: Housekeeping
+### Step 0: Housekeeping ----
 
 ## Load packages
 library(here)
@@ -64,6 +64,16 @@ library(magrittr)
 library(tidyr)
 library(lubridate)
 library(invgamma)
+library(haven)
+library(tidylog)
+
+## Set filepaths to the SBSP analysis database and import reporting period dates 
+rm(list = ls())
+source(here::here("Code", "00_housekeeping.R"))
+wd <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening",
+             "/Publications/SBoSP-Statistics/20230221")
+# source(paste0(wd, "/Code/00_housekeeping.R"))
+
 
 
 ## Define functions
@@ -88,29 +98,27 @@ Wilson_upperCI <- function(kpi_p, alpha, n){
 }
 
 
-
-## Set filepaths to the SBSP analysis database and import reporting period dates 
-source(here::here("code", "0_housekeeping.R"))
-
-##########################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Source function call currently working. Delete this code when properly running scripts.
 #analysis_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
 #                            "TPP/KPIs/Code + DB/TPP/data/analysis_dataset.rds"))
 # Directly define dates but delete later.
 #date_first <- "2016-05-01"
 #date_last  <- "2018-04-30"
-##########################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-### Step 2: Import data
+
+### Step 1: Import data ----
+
 #Import analysis database from script 1
-analysis_db <- readRDS(analysis_db_path)
+analysis_db <- read_rds(analysis_db_path)
 
 dim(analysis_db)
 names(analysis_db)
 
 # Then use Select statement to keep only required variables
 slim_db <- select(analysis_db, 
-                  invdate,sex, hbr14, optin, 
+                  invdate,sex, hbr19, optin, 
                   invite_n, uptake_n, col_perf_n, positive_n, 
                   polyp_cancer_n, adenoma_n,hr_adenoma_n)
 dim(slim_db)
@@ -118,34 +126,38 @@ dim(slim_db)
 
 # Use Filter statement to keep only data from reporting period
 slim_db <- slim_db %>%
-  filter(invdate >= as.Date(date_first) & invdate <= as.Date(date_last)) %>%
-  filter(optin == 0) %>%
-  filter(hbr14 %in% 1:14)
+            filter(hbr19 %in% 1:14) %>%
+            filter(optin == 0) %>%
+            filter(invdate >= as.Date(date_first) & 
+                   invdate <= as.Date(date_last))
 
 dim(slim_db)
 head(slim_db)
 
 
-## Step 2: Calculate HB-level KPI denominator values for x-axis co-ordinates i.e.:
+## Step 2: Calculate HB-level KPI denominator values ---- 
+
+# for x-axis co-ordinates i.e.:
 # the number of people who completed kits with a final result
 # the number of people with positive result having a colonoscopy performed
 denom_n_hb <- slim_db %>%
-  group_by(hbr14) %>%
-  summarise( uptake_n = sum(uptake_n),
-             col_perf_n = sum(col_perf_n)) %>%
-  ungroup()
+              group_by(hbr19) %>%
+              summarise(uptake_n = sum(uptake_n),
+                        col_perf_n = sum(col_perf_n)) %>%
+              ungroup()
 
 # Save output file
-saveRDS(denom_n_hb, 
-        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Publications/",
-                      "SBoSP-Statistics/20190806/Temp/",
-                      "Funnel-data_HB-denominators.rds"))
+# write_rds(denom_n_hb, here::here("Temp", "Funnel-data_HB-denominators.rds"),
+#           compress = 'gz')
+write_rds(denom_n_hb, paste0(wd, "/Temp/Funnel-data_HB-denominators.rds"),
+          compress = "gz")
 
-## Step 3: Calculate Wilson Score confidence intervals.
+
+## Step 3: Calculate Wilson Score confidence intervals ----
 
 ## Analysis process:
 # Create a skeleton containing all combinations of KPI number, sex and series 'n'
-#  - Note that here sex is just '3' (all persons).
+# Note that here sex is just '3' (all persons).
 # Import Scotland-level KPI rates from 'KPI data.xlsx'
 # Match the KPI rates to the skeleton by KPI number and sex.
 # Convert KPI rates from %s to probabilities.
@@ -154,8 +166,8 @@ saveRDS(denom_n_hb,
 # Save.
 
 ## Create skeleton
-KPI <- c(3,7,8,17,19,20)
-sex <- 3
+kpi <- c(3,7,8,17,19,20)
+sex <- "Persons"
 n <- c(1, 
        seq(10, 50,  by=10),
        seq(100, 2000, by=50),
@@ -164,63 +176,66 @@ n <- c(1,
        seq(11000, 19000, by=1000),
        seq(22000, 250000,  by=3000))
 
-funnel_limits_skeleton <- crossing(KPI,sex,n)
+funnel_limits_skeleton <- crossing(kpi, sex, n)
 
 
 ## Import Scotland-level KPI estimates from 'KPI_data.rds' produced in script 2.
-#Note: could alternatively recalculate estimates on-the-fly & label with KPI no. & sex.
+# Note: could alternatively recalculate estimates on-the-fly & label with KPI no. & sex.
 
-Scotland_KPIs_db <- readRDS(paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/",
-"Publications/SBoSP-Statistics/20190806/Temp//KPI_data.rds"))
+# scotland_KPIs_db <- read_rds(here::here("Temp","KPI_data.rds"))
+scotland_KPIs_db <- read_rds(paste0(wd, "/Temp/KPI_data.rds"))
 
-dim(Scotland_KPIs_db)
-names(Scotland_KPIs_db)
 
-Scotland_KPIs_db <- select(Scotland_KPIs_db, KPI, sex, "15") %>%
-  filter(sex == 3) %>%
-  filter(KPI %in% c(3,7,8,17,19,20)) %>%
-  rename(Scotland_rate = "15")
+
+dim(scotland_KPIs_db)
+names(scotland_KPIs_db)
+
+scotland_KPIs_db <- select(scotland_KPIs_db, kpi, sex, "15") %>%
+                    filter(sex == "Persons") %>%
+                    filter(kpi %in% c(3,7,8,17,19,20)) %>%
+                    rename(scotland_rate = "15")
 
 # Match them to add rates to skeleton.
-conf_limits.db<- left_join(funnel_limits_skeleton, Scotland_KPIs_db, by = c("KPI","sex"))
-names(conf_limits.db)
-head(conf_limits.db)
+conf_limits_db <- left_join(funnel_limits_skeleton, scotland_KPIs_db, 
+                           by = c("kpi","sex"))
+names(conf_limits_db)
+head(conf_limits_db)
 
-#### Calculate Warning and Control limits
+### Step 4: Calculate Warning and Control limits ----
 
 # First, convert Scotland KPIs from percentages back to proportions.
-conf_limits.db$p <- (conf_limits.db$Scotland_rate)/100
+conf_limits_db$p <- (conf_limits_db$scotland_rate)/100
 
 # Calculate 95%CIs
-conf_limits.db$lower95 <- Wilson_lowerCI(conf_limits.db$p, alpha=0.05, conf_limits.db$n)
-conf_limits.db$upper95 <- Wilson_upperCI(conf_limits.db$p, alpha=0.05, conf_limits.db$n)
+conf_limits_db$lower95 <- Wilson_lowerCI(conf_limits_db$p, alpha=0.05, conf_limits_db$n)
+conf_limits_db$upper95 <- Wilson_upperCI(conf_limits_db$p, alpha=0.05, conf_limits_db$n)
 
 # Calculate 99%CIs
-conf_limits.db$lower99 <- Wilson_lowerCI(conf_limits.db$p, alpha=0.01, conf_limits.db$n)
-conf_limits.db$upper99 <- Wilson_upperCI(conf_limits.db$p, alpha=0.01, conf_limits.db$n)
+conf_limits_db$lower99 <- Wilson_lowerCI(conf_limits_db$p, alpha=0.01, conf_limits_db$n)
+conf_limits_db$upper99 <- Wilson_upperCI(conf_limits_db$p, alpha=0.01, conf_limits_db$n)
 
 #Convert CLs into %
-conf_limits.db$lower95 <- conf_limits.db$lower95 * 100
-conf_limits.db$upper95 <- conf_limits.db$upper95 * 100
-conf_limits.db$lower99 <- conf_limits.db$lower99 * 100
-conf_limits.db$upper99 <- conf_limits.db$upper99 * 100
+conf_limits_db$lower95 <- conf_limits_db$lower95 * 100
+conf_limits_db$upper95 <- conf_limits_db$upper95 * 100
+conf_limits_db$lower99 <- conf_limits_db$lower99 * 100
+conf_limits_db$upper99 <- conf_limits_db$upper99 * 100
 
-head(conf_limits.db)
-str(conf_limits.db)
+head(conf_limits_db)
+glimpse(conf_limits_db)
 
 
 ## Finally reshape the data
 
 #Simplify dataset
-conf_limits.db <- select(conf_limits.db, -sex, -p)
+conf_limits_db <- select(conf_limits_db, -sex, -p)
 
 #Create subsets by KPI to re-join
-kpi_3  <- filter(conf_limits.db, KPI ==  3)
-kpi_7  <- filter(conf_limits.db, KPI ==  7)
-kpi_8  <- filter(conf_limits.db, KPI ==  8)
-kpi_17 <- filter(conf_limits.db, KPI == 17)
-kpi_19 <- filter(conf_limits.db, KPI == 19)
-kpi_20 <- filter(conf_limits.db, KPI == 20)
+kpi_3  <- filter(conf_limits_db, kpi ==  3)
+kpi_7  <- filter(conf_limits_db, kpi ==  7)
+kpi_8  <- filter(conf_limits_db, kpi ==  8)
+kpi_17 <- filter(conf_limits_db, kpi == 17)
+kpi_19 <- filter(conf_limits_db, kpi == 19)
+kpi_20 <- filter(conf_limits_db, kpi == 20)
 
 #Rename columns to add a KPI ID prefix
 colnames(kpi_3)  <- paste("kpi3",  colnames(kpi_3),  sep = "_")
@@ -231,26 +246,31 @@ colnames(kpi_19) <- paste("kpi19", colnames(kpi_19), sep = "_")
 colnames(kpi_20) <- paste("kpi20", colnames(kpi_20), sep = "_")
 
 #Bind tables together
-conf_limits_output <- bind_cols(kpi_3,kpi_7,kpi_8,kpi_17,kpi_19,kpi_20,.id = NULL)
+conf_limits_output <- bind_cols(kpi_3, kpi_7, kpi_8, kpi_17, kpi_19, kpi_20, 
+                                .id = NULL)
 
 #Tidy up columns by removing KPI-label columns and redundant columns of 'n'
 names(conf_limits_output)
 conf_limits_output <-  select(conf_limits_output, 
-                              -kpi3_KPI, 
-                              -kpi7_KPI, -kpi7_n,
-                              -kpi8_KPI, -kpi8_n,
-                              -kpi17_KPI,-kpi17_n,
-                              -kpi19_KPI,-kpi19_n, 
-                              -kpi20_KPI,-kpi20_n) %>%
-  rename(population_n = kpi3_n)
+                              -kpi3_kpi, 
+                              -kpi7_kpi, -kpi7_n,
+                              -kpi8_kpi, -kpi8_n,
+                              -kpi17_kpi,-kpi17_n,
+                              -kpi19_kpi,-kpi19_n, 
+                              -kpi20_kpi,-kpi20_n) %>%
+                        rename(population_n = kpi3_n)
 
 
+### Step 5: Save output file ----
 
-#Save output file
-#write_excel_csv(conf_limits_output, 
-#                path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/",
-#                              "Code + DB/TPP/data/Funnel-data_Confidence-limits.csv"))
-saveRDS(conf_limits_output, 
-        file = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Publications/",
-                      "SBoSP-Statistics/20190806/Temp/",
-                      "Funnel-data_Confidence-limits.rds"))
+# write_excel_csv(conf_limits_output, 
+#                 path = paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/TPP/KPIs/",
+#                               "Code + DB/TPP/data/Funnel-data_Confidence-limits.csv"))
+#                               
+# write_rds(conf_limits_output,
+#           here::here("Temp","Funnel-data_Confidence-limits.rds"),
+#           compress = 'gz')
+
+write_rds(conf_limits_output, 
+          paste0(wd, "/Temp/Funnel-data_Confidence-limits.rds"))
+          
