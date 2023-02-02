@@ -128,8 +128,7 @@ cancer_reg_data <- cancer_reg_data %>%
 # Count cancer column to see number of people diagnosed
 
 cancer_reg_data %>% 
-  group_by(cancer) %>% 
-  count()
+  count(cancer)
 
 # Filter to take people diagnosed with cancer and arrange by chinum
 
@@ -143,8 +142,7 @@ cancer_reg_data <- cancer_reg_data %>%
 # Just for information
 
 cancer_reg_data %>% 
-  group_by(cancer, polypca) %>% 
-  count() %>% 
+  count(cancer, polypca) %>% 
   adorn_totals()
 
 # 306 cancers (64 out of all cancers are polyp cancers) - Nov 2018
@@ -173,26 +171,14 @@ rm(sbs_db)
 
 # Read in last cancer registry extract
 # Need to add leading zeros to some CHIs which have dropped from this csv
-# Also convert sex to characterand invitation_month to yearmon for comparison
-# Convert some columns to dates
-# Add a leading zero for other columns where required, keeping NAs as NA and 
-# storing them as characters
+# Convert invitation_month to yearmon for comparison
+# Remove record_type column as it is only required for latest output
 
-# The new output has been saved as a .xlsx file, so these steps hopefully
-# won't be required next time
-
-last_scr_extract <- read_csv(paste0(pub_folder, last_scr_folder, "/Output/", 
+last_scr_extract <- read.xlsx(paste0(pub_folder, last_scr_folder, "/Output/", 
                                     "CancerReg_Extract_", last_scr_month, 
-                                    ".csv")) %>% 
-  mutate(chinum = chi_pad(as.character(chinum)), 
-         sex = as.character(sex),
-         invitation_month = as.yearmon(invitation_month, "%b-%y")) %>% 
-  mutate(across(c(dob, datecolperf, barctdat), ~ dmy(.))) %>% 
-  mutate(across(c(colperf, colcomp, barenctc, barectalt, cancer, dukes, 
-                  polypca), ~ case_when(is.na(.) ~ NA_character_, 
-                                        !is.na(.) ~ str_pad(., 2, "left", "0"))
-                )
-         ) %>% 
+                                    ".xlsx"), 
+                              detectDates = TRUE) %>% 
+  mutate(invitation_month = as.yearmon(invitation_month, "%b %Y")) %>% 
   select(-c(record_type)) # added as it was reading as an extra column for comparison
   
 
