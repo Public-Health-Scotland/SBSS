@@ -48,11 +48,15 @@ extract_folder <- "2022-11"
 
 # Define cancer registry extract folder for last extract
 
-last_scr_folder <- "20220805"
-new_scr_folder <- "20230221"
+scr_folder_1 <- "20210809"
+scr_folder_2 <- "20220208"
+scr_folder_3 <- "20220805"
+scr_folder_4 <- "20230221"
 
-last_scr_month <- "May2022"
-new_scr_month <- "Nov2022"
+scr_month_1 <- "May2021"
+scr_month_2 <- "Nov2021"
+scr_month_3 <- "May2022"
+scr_month_4 <- "Nov2022"
 
 # Define filepaths
 
@@ -169,39 +173,78 @@ rm(sbs_db)
 
 ### Step 3: Compare with last extract ----
 
+# There was no cancer reg extract for this run - left as tibble for now
+# Next time we can move extract 2 to extract 1 and going forward should be fine
+
+scr_extract_1 <- tibble(upload = dmy("01/05/2021"))
+
+# Read in last cancer registry extract
+# Need to add leading zeros to some CHIs which have dropped from this csv
+# Also convert sex to characterand invitation_month to yearmon for comparison
+# Convert some columns to dates
+# Add a leading zero for other columns where required, keeping NAs as NA and 
+# storing them as characters
+
+scr_extract_2 <- read_csv(paste0(pub_folder, scr_folder_2, "/Output/", 
+                                 "CancerReg_Extract_", scr_month_2, 
+                                 ".csv")) %>% 
+  mutate(chinum = chi_pad(as.character(chinum)), 
+         sex = as.character(sex),
+         invitation_month = as.yearmon(invitation_month, "%b-%y"), 
+         upload = dmy("01/11/2021")) %>% 
+  mutate(across(c(dob, datecolperf, barctdat), ~ dmy(.))) %>% 
+  mutate(across(c(colperf, colcomp, barenctc, barectalt, cancer, dukes, 
+                  polypca), ~ case_when(is.na(.) ~ NA_character_, 
+                                        !is.na(.) ~ str_pad(., 2, "left", "0"))
+  )
+  )
+
 # Read in last cancer registry extract
 # Need to add leading zeros to some CHIs which have dropped from this csv
 # Convert invitation_month to yearmon for comparison
 # Remove record_type column as it is only required for latest output
 
-last_scr_extract <- read.xlsx(paste0(pub_folder, last_scr_folder, "/Output/", 
-                                    "CancerReg_Extract_", last_scr_month, 
+scr_extract_3 <- read.xlsx(paste0(pub_folder, scr_folder_3, "/Output/", 
+                                      "CancerReg_Extract_", scr_month_3, 
                                     ".xlsx"), 
                               detectDates = TRUE) %>% 
-  mutate(invitation_month = as.yearmon(invitation_month, "%b %Y")) %>% 
-  select(-c(record_type)) # added as it was reading as an extra column for comparison
-  
+  mutate(invitation_month = as.yearmon(invitation_month, "%b %Y"), 
+         upload = dmy("01/05/2022"))
 
+# Bind data together
+# Sort data by chinum, upload and record_type
+# Group by chinum and take the last row
+# This prioritises keeping the latest upload date and updated records
+
+scr_extract_prev <- bind_rows(scr_extract_1, scr_extract_2, scr_extract_3) %>% 
+  arrange(chinum, upload, record_type) %>% 
+  group_by(chinum) %>% 
+  slice(n()) %>% 
+  ungroup() %>% 
+  select(-c(upload, record_type))
+  
 # Take a subset of all cancers in current extract that were not in previous one
 
-diff_from_last_extract <- dplyr::setdiff(cancer_reg_data, last_scr_extract)
+diff_from_last_extract <- dplyr::setdiff(cancer_reg_data, scr_extract_prev)
 
 # Take a list of all chi numbers in the last extract
 
-last_scr_extract_chi <- last_scr_extract %>% 
+scr_extract_prev_chi <- scr_extract_prev %>% 
   pull(chinum)
 
 # This will be a mix of new cancers and older ones which have changed slightly
 # e.g. their dukes code has changed
 # Create a flag to identify these as new or updated
 # Arrange data by invitation_month and chinum
+# CP Feb 23 - this extract contains some older invites as new cancers
+# These appear to be people included on previous HB uploads but without a
+# cancer record - so they qualify as new cancer reg records
 
 diff_from_last_extract <- diff_from_last_extract %>% 
-  mutate(record_type = case_when(chinum %in% last_scr_extract_chi ~ "updated", 
-                                 !(chinum %in% last_scr_extract_chi) ~ "new"
+  mutate(record_type = case_when(chinum %in% scr_extract_prev_chi ~ "updated", 
+                                 !(chinum %in% scr_extract_prev_chi) ~ "new"
                                  )) %>% 
  arrange(invitation_month, chinum)
- # arrange(chinum)  
 
 # Check all rows have been assigned a record_type value
 # Majority should be new records
@@ -213,5 +256,5 @@ diff_from_last_extract %>% count(record_type)
 # Save output
 
 write.xlsx(diff_from_last_extract, 
-          here::here(paste0("Output/", "CancerReg_Extract_", new_scr_month, 
+          here::here(paste0("Output/", "CancerReg_Extract_", scr_month_4, 
                             ".xlsx")))

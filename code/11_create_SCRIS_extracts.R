@@ -38,6 +38,14 @@ library(here)
 
 todays_date <- strftime(today(), "%Y%m%d")
 
+# Define current data extract folder name
+
+extract_folder <- "2022-11"
+
+sbsdb_path <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Data/",
+                      "Programme/", extract_folder, 
+                     "/combined_extract_all.rds")
+
 # Define functions
 
 summarise_grouped_vars <- function(df, ...){
@@ -83,7 +91,11 @@ fs_combined_extract <- read_rds(paste0("/PHI_conf/CancerGroup1/Topics/",
 
 # Read in latest bowel extract
 
-bowel_data <- read_rds(sbsdb_path)
+bowel_data <- read_rds(sbsdb_path) %>% 
+  zap_formats() %>%
+  zap_widths() %>%
+  remove_all_labels() %>% 
+  arrange(datecolperf)
 
 # Take data which has a hbr19 value between 1 and 14 and is not an optin
 # Define year, sex and hbr19 variables
@@ -448,7 +460,6 @@ level_three_output <- bowel_data %>%
 ### 6 Output ----
 
 # Save output
-# CP - haven't saved yet as don't want to overwrite data until method is checked
 
 write_csv(level_one_output,
           paste0(output_path, "/Level 1/SCRIS_Level_1_Bowel Screening/Data/",
@@ -459,5 +470,5 @@ write_csv(level_two_output,
                  "SCRIS_Level_2_Bowel_Screening_", todays_date, ".csv"))
 
 write_csv(level_three_output,
-          paste0(output_path, "/Level 3/SCRIS_Level_3_Bowel Screening/Data/",
-                 "SCRIS_Level_3_Bowel_Screening_", todays_date, ".csv"))
+          paste0(output_path, "/Level 3/SCRIS_Level_3_Bowel screening/Data/",
+                 "SCRIS_Level_3_Bowel_Screening.csv"))
