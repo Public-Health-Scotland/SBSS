@@ -16,7 +16,6 @@ library(tidyr)
 library(readr)
 library(janitor)
 library(lubridate)
-library(invgamma)
 library(purrr)
 library(haven)
 library(here)
@@ -27,7 +26,7 @@ library(tidylog)
 rm(list = ls())
 source(here::here("Code","00_housekeeping.R"))
 wd <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening",
-             "/Publications/SBoSP-Statistics/20230221")
+             "/Publications/SBoSP-Statistics/20230804")
 # source(paste0(wd, "/Code/00_housekeeping.R"))
 
 
@@ -53,88 +52,94 @@ SIMD_data <- SIMD_data %>%
       invdate >= as.Date("2017-01-01") ~ as.numeric(simd2020)),
     ### Variables for participation year
     ## May-April report period
-    year_07_09 = ifelse(invdate >= as.Date("2007-05-01") &
-                        invdate <= as.Date("2009-04-30"),
-                         1, 0),
-     year_08_10 = ifelse(invdate >= as.Date("2008-05-01") &
-                           invdate <= as.Date("2010-04-30"),
-                         1, 0),
-     year_09_11 = ifelse(invdate >= as.Date("2009-05-01") &
-                           invdate <= as.Date("2011-04-30"),
-                         1, 0),
-     year_10_12 = ifelse(invdate >= as.Date("2010-05-01") &
-                           invdate <= as.Date("2012-04-30"),
-                         1, 0),
-     year_11_13 = ifelse(invdate >= as.Date("2011-05-01") &
-                           invdate <= as.Date("2013-04-30"),
-                         1, 0),
-     year_12_14 = ifelse(invdate >= as.Date("2012-05-01") &
-                           invdate <= as.Date("2014-04-30"),
-                         1, 0),
-     year_13_15 = ifelse(invdate >= as.Date("2013-05-01") &
-                           invdate <= as.Date("2015-04-30"),
-                         1, 0),
-     year_14_16 = ifelse(invdate >= as.Date("2014-05-01") &
-                           invdate <= as.Date("2016-04-30"),
-                         1, 0),
-     year_15_17 = ifelse(invdate >= as.Date("2015-05-01") &
-                           invdate <= as.Date("2017-04-30"),
-                         1, 0),
-     year_16_18 = ifelse(invdate >= as.Date("2016-05-01") &
-                           invdate <= as.Date("2018-04-30"),
-                         1, 0),
-     year_17_19 = ifelse(invdate >= as.Date("2017-05-01") &
-                           invdate <= as.Date("2019-04-30"),
-                         1, 0),
-     year_18_20 = ifelse(invdate >= as.Date("2018-05-01") &
-                           invdate <= as.Date("2020-04-30"),
-                         1, 0),
-     year_19_21 = ifelse(invdate >= as.Date("2019-05-01") &
-                           invdate <= as.Date("2021-04-30"),
-                         1, 0),
-      year_20_22 = ifelse(invdate >= as.Date("2020-05-01") &
-                          invdate <= as.Date("2022-04-30"),
-                          1, 0),
+    # year_07_09 = ifelse(invdate >= as.Date("2007-05-01") &
+    #                     invdate <= as.Date("2009-04-30"),
+    #                      1, 0),
+    #  year_08_10 = ifelse(invdate >= as.Date("2008-05-01") &
+    #                        invdate <= as.Date("2010-04-30"),
+    #                      1, 0),
+    #  year_09_11 = ifelse(invdate >= as.Date("2009-05-01") &
+    #                        invdate <= as.Date("2011-04-30"),
+    #                      1, 0),
+    #  year_10_12 = ifelse(invdate >= as.Date("2010-05-01") &
+    #                        invdate <= as.Date("2012-04-30"),
+    #                      1, 0),
+    #  year_11_13 = ifelse(invdate >= as.Date("2011-05-01") &
+    #                        invdate <= as.Date("2013-04-30"),
+    #                      1, 0),
+    #  year_12_14 = ifelse(invdate >= as.Date("2012-05-01") &
+    #                        invdate <= as.Date("2014-04-30"),
+    #                      1, 0),
+    #  year_13_15 = ifelse(invdate >= as.Date("2013-05-01") &
+    #                        invdate <= as.Date("2015-04-30"),
+    #                      1, 0),
+    #  year_14_16 = ifelse(invdate >= as.Date("2014-05-01") &
+    #                        invdate <= as.Date("2016-04-30"),
+    #                      1, 0),
+    #  year_15_17 = ifelse(invdate >= as.Date("2015-05-01") &
+    #                        invdate <= as.Date("2017-04-30"),
+    #                      1, 0),
+    #  year_16_18 = ifelse(invdate >= as.Date("2016-05-01") &
+    #                        invdate <= as.Date("2018-04-30"),
+    #                      1, 0),
+    #  year_17_19 = ifelse(invdate >= as.Date("2017-05-01") &
+    #                        invdate <= as.Date("2019-04-30"),
+    #                      1, 0),
+    #  year_18_20 = ifelse(invdate >= as.Date("2018-05-01") &
+    #                        invdate <= as.Date("2020-04-30"),
+    #                      1, 0),
+    #  year_19_21 = ifelse(invdate >= as.Date("2019-05-01") &
+    #                        invdate <= as.Date("2021-04-30"),
+    #                      1, 0),
+    #  year_20_22 = ifelse(invdate >= as.Date("2020-05-01") &
+    #                       invdate <= as.Date("2022-04-30"),
+    #                      1, 0),
+    #  year_21_23 = ifelse(invdate >= as.Date("2021-05-01") &
+    #                       invdate <= as.Date("2023-04-30"),
+    #                      1, 0),
     ## Nov-Oct report period                    
-    #  year_07_09 = ifelse(invdate >= as.Date("2007-11-01") &
-    #                        invdate <= as.Date("2009-10-31"),
-    #                      1, 0),
-    #  year_08_10 = ifelse(invdate >= as.Date("2008-11-01") &
-    #                        invdate <= as.Date("2010-10-31"),
-    #                      1, 0),
-    #  year_09_11 = ifelse(invdate >= as.Date("2009-11-01") &
-    #                        invdate <= as.Date("2011-10-31"),
-    #                      1, 0),
-    #  year_10_12 = ifelse(invdate >= as.Date("2010-11-01") &
-    #                        invdate <= as.Date("2012-10-31"),
-    #                      1, 0),
-    #  year_11_13 = ifelse(invdate >= as.Date("2011-11-01") &
-    #                        invdate <= as.Date("2013-10-31"),
-    #                      1, 0),
-    #  year_12_14 = ifelse(invdate >= as.Date("2012-11-01") &
-    #                        invdate <= as.Date("2014-10-31"),
-    #                      1, 0),
-    #  year_13_15 = ifelse(invdate >= as.Date("2013-11-01") &
-    #                        invdate <= as.Date("2015-10-31"),
-    #                      1, 0),
-    # year_14_16 = ifelse(invdate >= as.Date("2014-11-01") &
-    #                        invdate <= as.Date("2016-10-31"),
-    #                      1, 0),
-    #  year_15_17 = ifelse(invdate >= as.Date("2015-11-01") &
-    #                        invdate <= as.Date("2017-10-31"),
-    #                      1, 0),
-    #  year_16_18 = ifelse(invdate >= as.Date("2016-11-01") &
-    #                        invdate <= as.Date("2018-10-31"),
-    #                      1, 0),
-    #  year_17_19 = ifelse(invdate >= as.Date("2017-11-01") &
-    #                        invdate <= as.Date("2019-10-31"),
-    #                      1, 0),
-    #  year_18_20 = ifelse(invdate >= as.Date("2018-11-01") &
-    #                        invdate <= as.Date("2020-10-31"),
-    #                      1, 0),
-    # year_19_21 = ifelse(invdate >= as.Date("2019-11-01") &
-    #                       invdate <= as.Date("2021-10-31"),
-    #                     1, 0),
+     year_07_09 = ifelse(invdate >= as.Date("2007-11-01") &
+                           invdate <= as.Date("2009-10-31"),
+                         1, 0),
+     year_08_10 = ifelse(invdate >= as.Date("2008-11-01") &
+                           invdate <= as.Date("2010-10-31"),
+                         1, 0),
+     year_09_11 = ifelse(invdate >= as.Date("2009-11-01") &
+                           invdate <= as.Date("2011-10-31"),
+                         1, 0),
+     year_10_12 = ifelse(invdate >= as.Date("2010-11-01") &
+                           invdate <= as.Date("2012-10-31"),
+                         1, 0),
+     year_11_13 = ifelse(invdate >= as.Date("2011-11-01") &
+                           invdate <= as.Date("2013-10-31"),
+                         1, 0),
+     year_12_14 = ifelse(invdate >= as.Date("2012-11-01") &
+                           invdate <= as.Date("2014-10-31"),
+                         1, 0),
+     year_13_15 = ifelse(invdate >= as.Date("2013-11-01") &
+                           invdate <= as.Date("2015-10-31"),
+                         1, 0),
+    year_14_16 = ifelse(invdate >= as.Date("2014-11-01") &
+                           invdate <= as.Date("2016-10-31"),
+                         1, 0),
+     year_15_17 = ifelse(invdate >= as.Date("2015-11-01") &
+                           invdate <= as.Date("2017-10-31"),
+                         1, 0),
+     year_16_18 = ifelse(invdate >= as.Date("2016-11-01") &
+                           invdate <= as.Date("2018-10-31"),
+                         1, 0),
+     year_17_19 = ifelse(invdate >= as.Date("2017-11-01") &
+                           invdate <= as.Date("2019-10-31"),
+                         1, 0),
+     year_18_20 = ifelse(invdate >= as.Date("2018-11-01") &
+                           invdate <= as.Date("2020-10-31"),
+                         1, 0),
+     year_19_21 = ifelse(invdate >= as.Date("2019-11-01") &
+                          invdate <= as.Date("2021-10-31"),
+                        1, 0),
+     year_20_22 = ifelse(invdate >= as.Date("2020-11-01") &
+                          invdate <= as.Date("2022-10-31"),
+                        1, 0),
     # Denominator by year
     denom_07_09 = year_07_09 * invite_n,
     denom_08_10 = year_08_10 * invite_n,
@@ -204,10 +209,16 @@ uptake_simd <- function(simd_num, simd_val, sex_num, sex_char) {
 
 ## Males
 simd_1_male <- uptake_simd(1, "1", 1, "Male")
+gc()
 simd_2_male <- uptake_simd(2, "2", 1, "Male")
+gc()
 simd_3_male <- uptake_simd(3, "3", 1, "Male")
+gc()
 simd_4_male <- uptake_simd(4, "4", 1, "Male")
+gc()
 simd_5_male <- uptake_simd(5, "5", 1, "Male")
+gc()
+
 
 # simd_total_male <- uptake_simd(c(1:5), "Total", 1, "Male")
 simd_all_male <- bind_rows(simd_1_male, simd_2_male, simd_3_male, 
@@ -215,10 +226,15 @@ simd_all_male <- bind_rows(simd_1_male, simd_2_male, simd_3_male,
 
 ## Females
 simd_1_female <- uptake_simd(1, "1", 2, "Female")
+gc()
 simd_2_female <- uptake_simd(2, "2", 2, "Female")
+gc()
 simd_3_female <- uptake_simd(3, "3", 2, "Female")
+gc()
 simd_4_female <- uptake_simd(4, "4", 2, "Female")
+gc()
 simd_5_female <- uptake_simd(5, "5", 2, "Female")
+gc()
 
 # simd_total_female <- uptake_simd(c(1:5), "Total", 2, "Female")
 simd_all_female <- bind_rows(simd_1_female, simd_2_female, simd_3_female, 
@@ -226,10 +242,15 @@ simd_all_female <- bind_rows(simd_1_female, simd_2_female, simd_3_female,
 
 ## Total
 simd_1_total <- uptake_simd(1, "1", c(1:2), "All Persons")
+gc()
 simd_2_total <- uptake_simd(2, "2", c(1:2), "All Persons")
+gc()
 simd_3_total <- uptake_simd(3, "3", c(1:2), "All Persons")
+gc()
 simd_4_total <- uptake_simd(4, "4", c(1:2), "All Persons")
+gc()
 simd_5_total <- uptake_simd(5, "5", c(1:2), "All Persons")
+gc()
 # simd_total_total <- uptake_simd(c(1:5), "Total", c(1:2), "All Persons")
 
 simd_all_total <- bind_rows(simd_1_total, simd_2_total, simd_3_total, 

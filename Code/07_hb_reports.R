@@ -17,7 +17,8 @@ library(dplyr)
 library(tidyr)
 library(here)
 library(haven)
-library(XLConnect)
+library(stringr)
+library(openxlsx)
 library(tidylog)
 
 
@@ -25,7 +26,7 @@ library(tidylog)
 rm(list = ls())
 source(here::here("Code","00_housekeeping.R"))
 wd <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening",
-             "/Publications/SBoSP-Statistics/20230221")
+             "/Publications/SBoSP-Statistics/20230804")
 # source(paste0(wd, "/Code/00_housekeeping.R"))
 
 
@@ -56,21 +57,27 @@ HB_KPI <- function(hb) {
 # writes to hb report excel
 write_hb_report <- function(df, filename) {
   
-  fname <- paste0(filename, "_KPI_", report_month, ".xls")
+  fname <- paste0(filename, "_KPI_", report_month, ".xlsx")
   
-  fpath <- paste0(wd, "/Output/CONFI-individual-HB-reports/",
-                fname)
+  hb_name <- gsub("_", " ", filename)
   
-  wb <- loadWorkbook(fpath)
+  hb_name <- str_to_title(hb_name)
   
-  setStyleAction(wb, XLC$"STYLE_ACTION.NONE")
+  hb_col <- tibble(hb = rep(hb_name, 97)) %>% 
+    mutate(hb = gsub(" And ", " and ", hb))
   
-  renameSheet(wb, 2, report_month)
+  template <- paste0(wd, "/Temp/HB_KPI_template.xlsx")
   
-  writeWorksheet(wb, df, sheet = 2,
-                 startRow = 44, startCol = 6, header = FALSE)
+  wb <- loadWorkbook(template)
   
-  saveWorkbook(wb)
+  renameWorksheet(wb, 2, report_month)
+  
+  writeData(wb, 2, hb_col, startRow = 2, startCol = 2, colNames = FALSE)
+  
+  writeData(wb, 2, df, startRow = 44, startCol = 6, colNames = FALSE)
+  
+  saveWorkbook(wb, paste0(here("Output/CONFI-individual-HB-reports/"), fname), 
+               overwrite = T)
   
 }
 
@@ -907,4 +914,3 @@ write_hb_report(shetland, "Shetland")
 write_hb_report(tayside, "Tayside")
 
 write_hb_report(w_i, "Western_Isles")
-

@@ -63,7 +63,6 @@ library(janitor)
 library(magrittr)
 library(tidyr)
 library(lubridate)
-library(invgamma)
 library(haven)
 library(tidylog)
 
@@ -71,7 +70,7 @@ library(tidylog)
 rm(list = ls())
 source(here::here("Code", "00_housekeeping.R"))
 wd <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening",
-             "/Publications/SBoSP-Statistics/20230221")
+             "/Publications/SBoSP-Statistics/20230804")
 # source(paste0(wd, "/Code/00_housekeeping.R"))
 
 

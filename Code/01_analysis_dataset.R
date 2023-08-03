@@ -193,6 +193,8 @@ slim_db %>% count(colperf)
 # other 152,422
 # NA   11,721,783, Nov 2022
 
+# other 158,979
+# NA   12,185,485, May 2023
 
 # ii) Check chinums ----
 slim_db <- slim_db %>%
@@ -206,7 +208,7 @@ slim_db %>% count()
 # 10,908,604 records, Nov 2021
 # 11,405,091 records, May 2022
 # 11,874,205 records, Nov 2022
-
+# 12,344,464 records, May 2023
 
 
 ## iii) Remove the flexi. sig. study participants ----
@@ -229,6 +231,7 @@ flexi_sig <- flexi_sig %>%
              select(chinum, fsperf, studyarm, fsresult) %>%
              filter(fsresult %in% ('01'))
 
+
 # Merge flexi sig patient identities onto main screening database
 slim_db <- left_join(slim_db, flexi_sig, 
                      by = "chinum") %>%
@@ -244,7 +247,8 @@ slim_db <- left_join(slim_db, flexi_sig,
 # 27 removed, 10,365,999 remain, May 2021
 # 27 removed, 10,908,577 remain, Nov 2021
 # 27 removed, 11,405,064 remain, May 2022
-# removed 27 rows (<1%), 11,874,178 rows remaining
+# 27 removed, 11,874,178 remain, Nov 2022
+# 27 removed, 12,344,437 remain, May 2023
 
 # Remove tables that are no longer needed
 rm(flexi_sig_path, flexi_sig, raw_db)
@@ -449,7 +453,7 @@ place_holder2 <- slim_db
 slim_db <- slim_db %>%
            mutate(
              date_diff = if_else(col_perf_n %in% 1, 
-                                 difftime(datecolperf, screresdat, units = "days"),
+                                 time_length(screresdat %--% datecolperf, unit = "days"),
                                  -999),
              waiting_time = case_when(col_perf_n %in% 1 & between(date_diff, 0, 28)  ~ "0 to 4 weeks",
                                       col_perf_n %in% 1 & between(date_diff, 29, 56) ~ "4 to 8 weeks",
@@ -473,11 +477,11 @@ slim_db <- slim_db %>%
 
 slim_db %>% count(waiting_time)
 
-#                   Nov 2020 /   May 2021 /   Nov 2021 /   May 2022 /   Nov 2022
-# 0-4 wks:            48,755 /     49,319 /     52,313 /     54,449 /     55,821
-# 4-8 wks:            39,963 /     40,194 /     43,211 /     45,459 /     47,570
-# >8 wks:             22,292 /     22,427 /     24,017 /     26,839 /     30,023
-# No colonoscopy: 10,196,084 / 10,254,059 / 10,789,036 / 11,278,317 / 11,740,764
+#                   Nov 2020 /   May 2021 /   Nov 2021 /   May 2022 /   Nov 2022 /   May 2023
+# 0-4 wks:            48,755 /     49,319 /     52,313 /     54,449 /     55,821 /     57,265
+# 4-8 wks:            39,963 /     40,194 /     43,211 /     45,459 /     47,570 /     50,240
+# >8 wks:             22,292 /     22,427 /     24,017 /     26,839 /     30,023 /     32,257
+# No colonoscopy: 10,196,084 / 10,254,059 / 10,789,036 / 11,278,317 / 11,740,764 / 12,204,405
 
 
 ## ii) Twelve-category waiting times ----
@@ -527,19 +531,19 @@ slim_db <- slim_db %>%
 
 slim_db %>% count(waiting_time_hb)      
 
-#                    Nov 2020  /   May 2021 /   Nov 2021 /   May 2022 /   Nov 2022 /
-# 1    0 to 2 weeks      9,573 /      9,700 /     10,061 /     10,273 /     10,377 /
-# 2   >2 to 4 weeks     39,179 /     39,616 /     42,249 /     44,172 /     45,440 /
-# 3   >4 to 6 weeks     25,969 /     26,151 /     28,074 /     29,622 /     30,907 /
-# 4   >6 to 8 weeks     13,994 /     14,043 /     15,137 /     15,837 /     16,663 /
-# 5   >8 to 10 weeks     7,011 /      7,034 /      7,583 /      7,950 /      8,597 /
-# 6  >10 to 12 weeks     4,799 /      4,813 /      5,221 /      5,726 /      6,290 /
-# 7  >12 to 14 weeks     3,369 /      3,373 /      3,649 /      4,434 /      5,120 /
-# 8  >14 to 16 weeks     2,408 /      2,412 /      2,548 /      3,132 /      3,682 /
-# 9  >16 to 18 weeks     1,405 /      1,411 /      1,487 /      1,698 /      2,028 /
-# 10 >18 to 20 weeks       857 /        864 /        914 /      1,016 /      1,182 /
-# 11 >20 weeks           2,443 /      2,520 /      2,615 /      2,883 /      3,124 /
-# 12 No colonoscopy 10,196,087 / 10,254,062 / 10,789,039 / 11,278,321 / 11,740,768 /
+#                    Nov 2020  /   May 2021 /   Nov 2021 /   May 2022 /   Nov 2022 /   May 2023
+# 1    0 to 2 weeks      9,573 /      9,700 /     10,061 /     10,273 /     10,377 /     10,490
+# 2   >2 to 4 weeks     39,179 /     39,616 /     42,249 /     44,172 /     45,440 /     46,771
+# 3   >4 to 6 weeks     25,969 /     26,151 /     28,074 /     29,622 /     30,907 /     32,387
+# 4   >6 to 8 weeks     13,994 /     14,043 /     15,137 /     15,837 /     16,663 /     17,853
+# 5   >8 to 10 weeks     7,011 /      7,034 /      7,583 /      7,950 /      8,597 /      9,509
+# 6  >10 to 12 weeks     4,799 /      4,813 /      5,221 /      5,726 /      6,290 /      6,844
+# 7  >12 to 14 weeks     3,369 /      3,373 /      3,649 /      4,434 /      5,120 /      5,547
+# 8  >14 to 16 weeks     2,408 /      2,412 /      2,548 /      3,132 /      3,682 /      3,931
+# 9  >16 to 18 weeks     1,405 /      1,411 /      1,487 /      1,698 /      2,028 /      2,172
+# 10 >18 to 20 weeks       857 /        864 /        914 /      1,016 /      1,182 /      1,244
+# 11 >20 weeks           2,443 /      2,520 /      2,615 /      2,883 /      3,124 /      3,280
+# 12 No colonoscopy 10,196,087 / 10,254,062 / 10,789,039 / 11,278,321 / 11,740,768 / 12,204,409
 
 
 
@@ -603,14 +607,14 @@ check <- slim_db %>% filter(is.na(dukes_der))
 rm(check)
 slim_db %>% count(dukes_der)  
 
-#                  Nov 2020 /   May 2021 /   Nov 2021 /   May 2022 /   Nov 2022 /
-# 1 ""             10299792 / 10,358,642 / 10,900,801 / 11,396,896 / 11,865,652 /
-# 2 "A"                2703 /      2,721 /      2,873 /      3,023 /      3,151 /
-# 3 "B"                1789 /      1,814 /      1,918 /      2,041 /      2,140 /
-# 4 "C"                1962 /      1,979 /      2,071 /      2,188 /      2,285 /
-# 5 "D"                 361 /        368 /        391 /        419 /        428 /
-# 6 "Not known"         265 /        270 /        318 /        292 /        317 /
-# 7 "Not supplied"      222 /        205 /        205 /        205 /        205 /
+#                  Nov 2020 /   May 2021 /   Nov 2021 /   May 2022 /   Nov 2022 /   May 2023
+# 1 ""             10299792 / 10,358,642 / 10,900,801 / 11,396,896 / 11,865,652 /      3,276
+# 2 "A"                2703 /      2,721 /      2,873 /      3,023 /      3,151 /      2,221
+# 3 "B"                1789 /      1,814 /      1,918 /      2,041 /      2,140 /      2,440
+# 4 "C"                1962 /      1,979 /      2,071 /      2,188 /      2,285 /        449
+# 5 "D"                 361 /        368 /        391 /        419 /        428 /        321
+# 6 "Not known"         265 /        270 /        318 /        292 /        317 /        205
+# 7 "Not supplied"      222 /        205 /        205 /        205 /        205 / 12,335,565
 ## Decrease in 'Not known' due to improved translation. May 2022
 
 # Do patterns make sense?
@@ -633,8 +637,8 @@ slim_db %>% filter(year(invdate) >= 2017) %>%
   pivot_wider(names_from = year, values_from = n) %>%
   View()
 
-test %>% tabyl(tnm_t, dukes)
-test %>% tabyl(tnm_t, dukes_der)
+slim_db %>% tabyl(tnm_t, dukes)
+slim_db %>% tabyl(tnm_t, dukes_der)
 
 # # Test - monitor % of each dukes stage/numbers over time
 # stage_chart <- slim_db %>%
@@ -791,12 +795,12 @@ slim_db <- slim_db %>%
 
 slim_db %>% count(uptake_history)
 
-#                                         Nov 2020 /  May 2021 /  Nov 2021 /  Nov 2022 /
-# 1 First round                          2,575,614 / 2,582,506 / 2,677,873 / 2,780,631 /
-# 2 Participated in previous round       4,341,720 / 4,452,272 / 4,745,431 / 5,309,710 /
-# 3 Didn't participate in previous round   475,904 /   487,915 /   520,207 /   581,728 /
-# 4 Never participated                   2,805,558 / 2,843,306 / 2,965,066 / 3,202,109 /
-# 5 NA                                     108,298 /         0 /         0 /         0 /
+#                                         Nov 2020 /  May 2021 /  Nov 2021 /  Nov 2022 /  May 2023
+# 1 First round                          2,575,614 / 2,582,506 / 2,677,873 / 2,780,631 / 2,828,166
+# 2 Participated in previous round       4,341,720 / 4,452,272 / 4,745,431 / 5,309,710 / 5,578,549
+# 3 Didn't participate in previous round   475,904 /   487,915 /   520,207 /   581,728 /   621,584
+# 4 Never participated                   2,805,558 / 2,843,306 / 2,965,066 / 3,202,109 / 3,316,138
+# 5 NA                                     108,298 /         0 /         0 /         0 /         0
 
 # May 2022 
 # 1 First round                          2,734,056
@@ -826,11 +830,12 @@ slim_db %>% mutate(with_haem = if_else((is.na(haemoglobin)|
                                 haemoglobin == ""), 'No', 'Yes')) %>%
             count(screres, with_haem)
 
-  # all screres == (21,22) should have a haemoglobin value
+# all screres == (21,22) should have a haemoglobin value
 # all correct, Nov 2021
 # all correct, May 2022
 # all correct, Nov 2022
- 
+# all correct, May 2023
+
 # Check if there any people who have fit positive with no haemoglobin or less than 80?
 hame_check2 <- slim_db %>% 
                 filter(screres == 22 & (is.na(haemoglobin)|haemoglobin < 80))
@@ -840,6 +845,7 @@ hame_check2 %>% count()
 #  0 cases, Nov 2021
 #  0 cases, May 2022
 #  0 cases, Nov 2022
+#  0 cases, May 2023
 
 # Check if there any people who have fit negative with no haemoglobin or >= 80?
 hame_check3 <- slim_db %>% 
@@ -849,6 +855,7 @@ hame_check3 %>% count()
 # 0 cases, Nov 2020
 # 0 cases, May 2022
 # 0 cases, Nov 2022
+# 0 cases, May 2023
 
 rm(hame_check2, hame_check3)
 
