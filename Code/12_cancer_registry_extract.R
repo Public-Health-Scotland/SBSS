@@ -44,7 +44,7 @@ rm(list = ls())
 
 # Define current data extract folder name
 
-extract_folder <- "2022-11"
+extract_folder <- "2023-05"
 
 # Define cancer registry extract folder for last extract
 
@@ -52,11 +52,15 @@ scr_folder_1 <- "20210809"
 scr_folder_2 <- "20220208"
 scr_folder_3 <- "20220805"
 scr_folder_4 <- "20230221"
+scr_folder_5 <- "20230804"
 
 scr_month_1 <- "May2021"
 scr_month_2 <- "Nov2021"
 scr_month_3 <- "May2022"
 scr_month_4 <- "Nov2022"
+scr_month_5 <- "May2023"
+
+output_month <- "May2023"
 
 # Define filepaths
 
@@ -67,15 +71,11 @@ sbs_db_path <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Data/",
                       "Programme/", extract_folder, 
                       "/combined_extract_all.rds")
 
-# Define working directory as no project for this publication
-
-setwd(paste0(pub_folder, new_scr_folder))
-
 # Extract dates with script 0
 
 source(here::here("Code","00_housekeeping.R"))
 wd <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening",
-             "/Publications/SBoSP-Statistics/20230221")
+             "/Publications/SBoSP-Statistics/20230804")
 # source(paste0(wd, "/Code/00_housekeeping.R"))
 
 
@@ -90,6 +90,8 @@ sbs_db <- read_rds(sbs_db_path) %>%
   remove_all_labels() %>% 
   arrange(datecolperf)
 
+gc()
+
 dim(sbs_db)
 
 #  8,518,163 records, Nov 2018
@@ -97,7 +99,7 @@ dim(sbs_db)
 # 10,908,604 records, Nov 2021
 # 11,405,091 records, May 2022
 # 11,874,205 records, Nov 2022
-
+# 12,344,464 records, May 2023
 
 
 ### Step 2: Prepare current extract data ----
@@ -116,6 +118,7 @@ dim(cancer_reg_data)
 
 # 1,482,751 cases, two-year period, May 2022
 # 1,583,195 cases, two-year period, Nov 2022
+# 1,992,445 cases, two-year period, May 2023
 
 names(cancer_reg_data)
 
@@ -142,6 +145,7 @@ cancer_reg_data <- cancer_reg_data %>%
 
 # 1,087 cases, two-year period, May 2022
 # 1,198 cases, two-year period, Nov 2022
+# 1,505 cases, two-year period, May 2023
 
 # Just for information
 
@@ -157,6 +161,7 @@ cancer_reg_data %>%
 # 1,019 cancers (187 out of all cancers are polyp cancers) - Nov 2021
 # 1,087 cancers (213 out of all cancers are polyp cancers) - May 2022
 # 1,198 cancers (231 out of all cancers are polyp cancers) - Nov 2022
+# 1,505 cancers (285 out of all cancers are polyp cancers) - May 2023
 
 head(cancer_reg_data)
 
@@ -178,7 +183,7 @@ rm(sbs_db)
 
 scr_extract_1 <- tibble(upload = dmy("01/05/2021"))
 
-# Read in last cancer registry extract
+# Read in cancer registry extract
 # Need to add leading zeros to some CHIs which have dropped from this csv
 # Also convert sex to characterand invitation_month to yearmon for comparison
 # Convert some columns to dates
@@ -199,7 +204,7 @@ scr_extract_2 <- read_csv(paste0(pub_folder, scr_folder_2, "/Output/",
   )
   )
 
-# Read in last cancer registry extract
+# Read in cancer registry extract
 # Need to add leading zeros to some CHIs which have dropped from this csv
 # Convert invitation_month to yearmon for comparison
 # Remove record_type column as it is only required for latest output
@@ -211,12 +216,25 @@ scr_extract_3 <- read.xlsx(paste0(pub_folder, scr_folder_3, "/Output/",
   mutate(invitation_month = as.yearmon(invitation_month, "%b %Y"), 
          upload = dmy("01/05/2022"))
 
+# Read in cancer registry extract
+# Need to add leading zeros to some CHIs which have dropped from this csv
+# Convert invitation_month to yearmon for comparison
+# Remove record_type column as it is only required for latest output
+
+scr_extract_4 <- read.xlsx(paste0(pub_folder, scr_folder_4, "/Output/", 
+                                  "CancerReg_Extract_", scr_month_4, 
+                                  ".xlsx"), 
+                           detectDates = TRUE) %>% 
+  mutate(invitation_month = as.yearmon(invitation_month, "%b %Y"), 
+         upload = dmy("01/11/2022"))
+
 # Bind data together
 # Sort data by chinum, upload and record_type
 # Group by chinum and take the last row
 # This prioritises keeping the latest upload date and updated records
 
-scr_extract_prev <- bind_rows(scr_extract_1, scr_extract_2, scr_extract_3) %>% 
+scr_extract_prev <- bind_rows(scr_extract_1, scr_extract_2, scr_extract_3, 
+                              scr_extract_4) %>% 
   arrange(chinum, upload, record_type) %>% 
   group_by(chinum) %>% 
   slice(n()) %>% 
@@ -256,5 +274,5 @@ diff_from_last_extract %>% count(record_type)
 # Save output
 
 write.xlsx(diff_from_last_extract, 
-          here::here(paste0("Output/", "CancerReg_Extract_", scr_month_4, 
+          here::here(paste0("Output/", "CancerReg_Extract_", scr_month_5, 
                             ".xlsx")))

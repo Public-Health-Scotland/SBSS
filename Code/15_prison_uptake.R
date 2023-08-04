@@ -12,26 +12,29 @@
 library(dplyr)
 library(janitor)
 library(tidyr)
+library(readr)
 library(lubridate)
 library(haven)
 library(sjlabelled)
 library(glue)
+library(here)
 library(openxlsx)
 library(tidylog)
 
 # Define filepaths
 
 screening_path <- glue("/PHI_conf/CancerGroup1/Topics/BowelScreening")
-current_pub <- glue("{screening_path}/Data/Programme/2022-11")
-output_folder <- glue("{screening_path}/Publications/SBoSP-Statistics/", 
-                      "20230221")
-template_path <- glue("{output_folder}/Output/CONFI-prison-uptake/", 
-                      "2023-02-21-Bowel-Screening-Prisons-Uptake.xlsx")
+current_pub <- glue("{screening_path}/Data/Programme/2023-05")
+template_path <- glue(here("Output/CONFI-prison-uptake", 
+                           "20230804-Bowel-Screening-Prisons-Uptake.xlsx"))
 
 # Set start and end dates
 
-start <- as_date("2020-05-01")
-end <- as_date("2022-04-30")
+start <- as_date("2020-11-01")
+end <- as_date("2022-10-31")
+
+# start <- as_date("2021-05-01")
+# end <- as_date("2023-04-30")
 
 
 
@@ -212,7 +215,7 @@ uptake_rate <- output_format %>%
 
 # Save output as rds
 
-saveRDS(output_format, glue("{output_folder}/Temp/prison_data_kpi_1.rds"))
+saveRDS(output_format, here("Temp/prison_data_kpi_1.rds"))
 
 
 ### 5.1 Excel Output ----

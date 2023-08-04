@@ -155,12 +155,13 @@ analysis_db <- read_rds(analysis_db_path) %>%
 dim(analysis_db)
 
 # Number of opt-ins based on above extract
-# 7,355 - May 19 upload
-# 7,636 - Nov 20 upload
-# 6,541 - May 21 upload
-# 7,477 - Nov 21 upload
-# 8,518 - May 22 upload
-# 9,781 - Nov 22 upload
+#  7,355 - May 19 upload
+#  7,636 - Nov 20 upload
+#  6,541 - May 21 upload
+#  7,477 - Nov 21 upload
+#  8,518 - May 22 upload
+#  9,781 - Nov 22 upload
+# 11,933 - May 23 upload
 
 # Check overview of invitation dates
 analysis_db %>%
@@ -171,7 +172,7 @@ analysis_db %>%
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 # Screening results per day looks sensible
-# Big jump in October 2020 - return to invitations after covid pause?
+# Big jumps in July 2022 and October 2022
 
 # Check all records are optins
 
@@ -291,7 +292,7 @@ KPI_data_full <- KPI_data_full %>%
 
 View(KPI_data_full)
 dim(KPI_data_full)
-# 39 rows
+# 45 rows
 
 
 

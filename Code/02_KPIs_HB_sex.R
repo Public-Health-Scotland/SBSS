@@ -41,7 +41,7 @@ library(tidylog)
 rm(list = ls())
 source(here::here("Code","00_housekeeping.R"))
 wd <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening",
-             "/Publications/SBoSP-Statistics/20230221")
+             "/Publications/SBoSP-Statistics/20230804")
 # source(paste0(wd, "/Code/00_housekeeping.R"))
 
 
@@ -136,7 +136,55 @@ KPI_proportion <- function(filter_column, filter_value, by, count_var, kpi_no) {
             spread(hbr19, p) %>%
             arrange(!!sym(by)) %>%
             ungroup()
-  }
+}
+
+KPI_proportion_f19 <- function(by, count_var, kpi_no) {
+  # By sex
+  KPI_sex <- analysis_db %>%
+    group_by(sex, hbr19,!!sym(by)) %>%
+    summarise(n = sum(!!sym(count_var))) %>%
+    mutate(p = n / sum(n) ) %>%
+    ungroup()
+  
+  # For all sexes
+  KPI_all <- analysis_db %>%
+    group_by(hbr19,!!sym(by)) %>%
+    summarise(n = sum(!!sym(count_var)))  %>%
+    mutate(sex = 3,
+           p = n / sum(n) ) %>%
+    ungroup()
+  
+  # Scotland sexes
+  KPI_Scot_sex <- analysis_db %>%
+    group_by(sex,!!sym(by)) %>%
+    summarise(n = sum(!!sym(count_var))) %>%
+    mutate(hbr19 = 15,
+           p = n / sum(n) ) %>%
+    ungroup()
+  
+  # Scotland total
+  KPI_Scot_all <- analysis_db %>%
+    group_by(!!sym(by)) %>%
+    summarise(n = sum(!!sym(count_var)) ) %>%
+    mutate(hbr19 = 15, 
+           sex = 3,
+           p = n / sum(n) ) %>%
+    ungroup()
+  
+  # Combine all of the above
+  KPI <- bind_rows(KPI_sex, KPI_all, KPI_Scot_sex, KPI_Scot_all) %>%
+    group_by(!!sym(by), sex, hbr19) %>%
+    mutate(KPI = kpi_no,
+           p = p * 100) %>%
+    select(-n) %>%
+    #pivot_wider(names_from = hbr19, values_from = p) # not sure why this doesn't work
+    #                                                 # perhaps needs to id_cols specified
+    spread(hbr19, p) %>%
+    arrange(!!sym(by)) %>%
+    ungroup() |> 
+    filter(is.na(icd) & sex == 3)
+}
+
 
 
 ### Step 1: Prepare dataset ----
@@ -156,6 +204,7 @@ dim(analysis_db)
 # 1,448,300 - Nov 21 upload
 # 1,474,146 - May 22 upload
 # 1,573,319 - Nov 22 upload
+# 1,980,393 - May 23 upload
 
 # Check overview of invitation dates
 analysis_db %>%
@@ -338,6 +387,10 @@ KPI_26_28 <- KPI_proportion("icd", "99", "icd", "cancer_n", 26) %>%
 KPI_26_28 %>% count(KPI)
 KPI_26_28 %>% print()
 
+# Figure 19
+# Get list of cancers with no ICD-10 codes
+
+f19 <- KPI_proportion_f19("icd", "cancer_n", 26)
 
 # Pull together basic, 2-year KPI data
 KPI_data <- bind_rows(KPI_1,
@@ -474,6 +527,9 @@ write_rds(age_dem, paste0(wd, "/Temp/age_dem.rds"),
 # write_rds(simd_dem, here::here("Temp", "simd_dem.rds"), 
 #           compress = 'gz')
 write_rds(simd_dem, paste0(wd, "/Temp/simd_dem.rds"), 
+          compress = 'gz')
+
+write_rds(f19, paste0(wd, "/Temp/figure_19.rds"), 
           compress = 'gz')
 
 

@@ -18,7 +18,7 @@ library(dplyr)
 library(tidyr)
 library(here)
 library(haven)
-library(XLConnect)
+library(openxlsx)
 library(stringr)
 library(tidylog)
 library(phsmethods)
@@ -26,9 +26,13 @@ library(phsmethods)
 # set filepaths and extract dates with script 0
 rm(list = ls())
 source(here::here("Code","00_housekeeping.R"))
-# wd <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening",
-#              "/Publications/SBoSP-Statistics/20230221")
+wd <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening",
+             "/Publications/SBoSP-Statistics/20230804")
 # source(paste0(wd, "/Code/00_housekeeping.R"))
+
+# Define latest postcode directory
+
+spd_version <- "2023_1"
 
 ## Functions
 
@@ -57,21 +61,26 @@ HB_KPI <- function(hb) {
 # writes to hb report excel
 write_hb_report <- function(df, filename) {
   
-  fname <- paste0(filename, "_KPI_", report_month, ".xls")
+  fname <- paste0(filename, "_KPI_", report_month, ".xlsx")
   
-  fpath <- here("Output/CONFI-individual-HB-reports",
-                fname)
+  hb_name <- gsub("_", " ", filename)
   
-  wb <- loadWorkbook(fpath)
+  hb_name <- str_to_title(hb_name)
   
-  setStyleAction(wb, XLC$"STYLE_ACTION.NONE")
+  hb_col <- tibble(hb_col = rep(hb_name, 97))
   
-  renameSheet(wb, 2, report_month)
+  template <- paste0(wd, "/Temp/HB_KPI_template.xlsx")
   
-  writeWorksheet(wb, df, sheet = 2,
-                 startRow = 44, startCol = 6, header = FALSE)
+  wb <- loadWorkbook(template)
   
-  saveWorkbook(wb)
+  renameWorksheet(wb, 2, report_month)
+  
+  writeData(wb, 2, hb_col, startRow = 2, startCol = 2, colNames = FALSE)
+  
+  writeData(wb, 2, df, startRow = 44, startCol = 6, colNames = FALSE)
+  
+  saveWorkbook(wb, paste0(here("Output/CONFI-individual-HB-reports/"), fname), 
+               overwrite = T)
   
 }
 
@@ -113,7 +122,7 @@ names(analysis_db)
 # Bring in Scottish postcode directory so we can get hb2006 geographies
 spd <- read_rds(paste0("/conf/linkage/output/lookups/Unicode/Geography/",
                        "Scottish Postcode Directory/", 
-                       "Scottish_Postcode_Directory_2022_2.rds")) %>%
+                       "Scottish_Postcode_Directory_", spd_version, ".rds")) %>%
   # keep using HB2006?
   # checked with NHS Highland (otherwise data continuity issues at their end)
   filter(hb2006 %in% 'S08000008') %>%
@@ -135,6 +144,8 @@ highland <- inner_join(analysis_db, spd,
 
 
 rm(analysis_db, analysis_db_path, sbsdb_path)
+
+gc()
 
 
 
@@ -879,17 +890,3 @@ write_hb_report(north, "Highland_North")
 # South
 
 write_hb_report(south, "Highland_South")
-
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#wb <- loadWorkbook(here("Output/CONFI-individual-HB-reports",
-#                        "Highland_South_KPI_May_2021.xls"))
-
-#setStyleAction(wb, XLC$"STYLE_ACTION.NONE")
-
-#writeWorksheet(wb, south,"May-21",
-#               startRow = 44, startCol = 6, header = FALSE)
-
-#saveWorkbook(wb)
-

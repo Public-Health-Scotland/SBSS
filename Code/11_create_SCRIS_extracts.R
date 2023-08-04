@@ -40,7 +40,7 @@ todays_date <- strftime(today(), "%Y%m%d")
 
 # Define current data extract folder name
 
-extract_folder <- "2022-11"
+extract_folder <- "2023-05"
 
 sbsdb_path <- paste0("/PHI_conf/CancerGroup1/Topics/BowelScreening/Data/",
                       "Programme/", extract_folder, 
@@ -66,7 +66,7 @@ summarise_grouped_vars <- function(df, ...){
 
 spd <- read_rds(paste0("/conf/linkage/output/lookups/Unicode/Geography/", 
                        "Scottish Postcode Directory/", 
-                       "Scottish_Postcode_Directory_2022_2.rds")) %>% 
+                       "Scottish_Postcode_Directory_2023_1.rds")) %>% 
   distinct(hb2019, hb2019name) %>% 
   rename(hbcode = hb2019, hbr19 = hb2019name)
 
